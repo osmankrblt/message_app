@@ -1,29 +1,45 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:message_app/constants/my_constants.dart';
+import 'package:provider/provider.dart';
+
 import 'package:message_app/constants/myGetterWidgets.dart';
+import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/constants/utils.dart';
 import 'package:message_app/widgets/custom_button.dart';
-import 'package:provider/provider.dart';
 
 import '../helper/firebase_provider.dart';
 import '../models/user_model.dart';
 import 'home_page.dart';
 
-class UserInformationPage extends StatefulWidget {
-  const UserInformationPage({super.key});
+class UpdateUserInformationPage extends StatefulWidget {
+  UserModel userModel;
+
+  UpdateUserInformationPage({
+    Key? key,
+    required this.userModel,
+  }) : super(key: key);
 
   @override
-  State<UserInformationPage> createState() => _UserInformationPageState();
+  State<UpdateUserInformationPage> createState() =>
+      _UpdateUserInformationPageState();
 }
 
-class _UserInformationPageState extends State<UserInformationPage> {
+class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
   File? image = null;
 
   final nameController = TextEditingController();
 
   final bioController = TextEditingController();
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    nameController.text = widget.userModel.name;
+    bioController.text = widget.userModel.bio;
+  }
 
   @override
   void dispose() {
@@ -43,6 +59,7 @@ class _UserInformationPageState extends State<UserInformationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ap = Provider.of<FirebaseProvider>(context, listen: false);
     final _isLoading =
         Provider.of<FirebaseProvider>(context, listen: true).isLoading;
     return Scaffold(
@@ -62,16 +79,42 @@ class _UserInformationPageState extends State<UserInformationPage> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          icon: Icon(
+                            Icons.arrow_back,
+                            color: myConstants.themeColor,
+                          ),
+                        ),
+                      ],
+                    ),
                     InkWell(
                       onTap: () => selectImage(context),
                       child: image == null
-                          ? CircleAvatar(
-                              backgroundColor: myConstants.themeColor,
-                              radius: 65,
-                              child: const Icon(
-                                Icons.account_circle,
-                                size: 50,
-                                color: Colors.white,
+                          ? CachedNetworkImage(
+                              fit: BoxFit.contain,
+                              imageUrl: ap.userModel.profilePic,
+                              cacheKey: ap.userModel.profilePic,
+                              imageBuilder: (context, imageProvider) =>
+                                  CircleAvatar(
+                                radius: 65,
+                                backgroundImage: imageProvider,
+                              ),
+                              placeholder: (context, url) =>
+                                  const CircularProgressIndicator(),
+                              errorWidget: (context, url, error) =>
+                                  CircleAvatar(
+                                backgroundColor: myConstants.themeColor,
+                                child: const Icon(
+                                  Icons.account_circle,
+                                  color: Colors.white,
+                                  size: 50,
+                                ),
                               ),
                             )
                           : CircleAvatar(
@@ -99,9 +142,13 @@ class _UserInformationPageState extends State<UserInformationPage> {
                     SizedBox(
                       width: MediaQuery.of(context).size.width * 0.8,
                       child: CustomButton(
-                        text: "Sign In",
+                        text: "Update",
                         onPressed: () {
-                          storeData();
+                          updateData();
+                          showSnackBar(
+                            context,
+                            "Your profile updated...",
+                          );
                         },
                       ),
                     ),
@@ -182,33 +229,18 @@ class _UserInformationPageState extends State<UserInformationPage> {
     );
   }
 
-  void storeData() async {
+  void updateData() async {
     final ap = Provider.of<FirebaseProvider>(context, listen: false);
 
-    UserModel userModel = UserModel(
-      name: nameController.text.trim(),
-      bio: bioController.text,
-      profilePic: "",
-      createdAt: "",
-      phoneNumber: "",
-      uid: "",
-    );
+    widget.userModel.name = nameController.text;
+    widget.userModel.bio = bioController.text;
 
-    ap.saveUserToFirebase(
-      context: context,
-      userModel: userModel,
-      profilePic: image,
-      onSuccess: () {
-        ap.setUserModelToSP().then(
-              (value) => ap.setSignInToSP().then(
-                    (value) => Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => HomePage(),
-                        ),
-                        (route) => false),
-                  ),
-            );
-      },
-    );
+    ap
+        .updateData(
+          context: context,
+          userModel: widget.userModel,
+          profilePic: image,
+        )
+        .then((value) => Navigator.of(context).pop());
   }
 }

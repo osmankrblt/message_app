@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/pages/otp_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/utils.dart';
@@ -27,6 +28,14 @@ class FirebaseProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get isSignedIn => _isSignedIn;
+
+  String? _phoneNumber;
+  String get phoneNumber => _phoneNumber!;
+
+  int? _resendToken;
+
+  bool _codeSentButton = true;
+  bool get codeSentButton => _codeSentButton;
 
   FirebaseProvider() {
     checkSignInFromSP();
@@ -55,25 +64,65 @@ class FirebaseProvider extends ChangeNotifier {
   }
 
 // DATABASE PROCESS
+  Future<void> updateData({
+    required BuildContext context,
+    required UserModel userModel,
+    required File? profilePic,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      _userModel = userModel;
 
-  Future saveUserToFirebase(
-      {required BuildContext context,
-      required UserModel userModel,
-      required File profilePic,
-      required Function onSuccess}) async {
+// upload image to firebase
+
+      if (profilePic != null) {
+        await saveImageToStorage("profilePic/$_uid", profilePic).then((value) {
+          userModel.profilePic = value;
+        });
+      }
+
+      _userModel = userModel;
+
+      await _firebaseFirestore
+          .collection("users")
+          .doc(_uid)
+          .update(userModel.toMap())
+          .then((value) {
+        _isLoading = false;
+        notifyListeners();
+      });
+
+      await setUserModelToSP();
+    } on FirebaseAuthException catch (e) {
+      showSnackBar(context, e.message.toString());
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future saveUserToFirebase({
+    required BuildContext context,
+    required UserModel userModel,
+    required File? profilePic,
+    required Function onSuccess,
+  }) async {
     try {
       _isLoading = true;
       notifyListeners();
 
 // upload image to firebase
 
-      await saveImageToStorage("profilePic/$_uid", profilePic).then((value) {
-        userModel.profilePic = value;
-        userModel.createdAt = DateTime.now().millisecondsSinceEpoch.toString();
-        userModel.phoneNumber = auth.currentUser!.phoneNumber!;
-        userModel.uid = auth.currentUser!.phoneNumber!;
-      });
-      print(userModel.toMap().toString());
+      if (profilePic != null) {
+        await saveImageToStorage("profilePic/$_uid", profilePic).then((value) {
+          userModel.profilePic = value;
+        });
+      }
+
+      userModel.createdAt = DateTime.now().millisecondsSinceEpoch.toString();
+      userModel.phoneNumber = auth.currentUser!.phoneNumber!;
+      userModel.uid = auth.currentUser!.phoneNumber!;
+
       _userModel = userModel;
 
       await _firebaseFirestore
@@ -153,12 +202,21 @@ class FirebaseProvider extends ChangeNotifier {
 
     String data = s.getString("user_model") ?? "";
     _userModel = UserModel.fromMap(jsonDecode(data));
-    _uid = _userModel!.uid;
+
     notifyListeners();
   }
 
+  Future<void> resendCode(BuildContext context) async {
+    showSnackBar(context, "Otp code will sent...");
+    await phoneVerify(context, phoneNumber);
+  }
+
   Future<void> phoneVerify(BuildContext context, String phoneNumber) async {
+    _codeSentButton = true;
+    notifyListeners();
     try {
+      _phoneNumber = phoneNumber;
+
       await auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) async {
@@ -175,11 +233,16 @@ class FirebaseProvider extends ChangeNotifier {
               ),
             ),
           );
+          _resendToken = resendToken;
         },
+        forceResendingToken: _resendToken,
         codeAutoRetrievalTimeout: (String verificationId) {
-          print("codeAutoRetrievalTimeout çalıştı");
+          print("Kod süresi doldu");
+          _codeSentButton = false;
+          showSnackBar(context, "Now, you can sent new otp code...");
+          notifyListeners();
         },
-        timeout: const Duration(seconds: 60),
+        timeout: Duration(seconds: myConstants.codeTimeDuration),
       );
     } on FirebaseException catch (e) {
       showSnackBar(
@@ -206,7 +269,7 @@ class FirebaseProvider extends ChangeNotifier {
       User? user = (await auth.signInWithCredential(_credential)).user;
 
       if (user != null) {
-        _uid = user.uid;
+        _uid = auth.currentUser!.uid;
         onSuccess();
       }
       _isLoading = false;
@@ -236,6 +299,27 @@ class FirebaseProvider extends ChangeNotifier {
       final SharedPreferences s = await SharedPreferences.getInstance();
 
       s.clear();
+    } on FirebaseException catch (e) {
+      return Future.error(e.message.toString());
+    } catch (e) {
+      return Future.error(e.toString());
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      await _firebaseFirestore.collection("users").doc(_uid).delete();
+      if (_userModel!.profilePic != "") {
+        await _firebaseStorage.ref().child("profilePic/$_uid").delete();
+      }
+
+      final SharedPreferences s = await SharedPreferences.getInstance();
+      s.clear();
+
+      await auth.signOut();
+
+      _isSignedIn = false;
+      notifyListeners();
     } on FirebaseException catch (e) {
       return Future.error(e.message.toString());
     } catch (e) {

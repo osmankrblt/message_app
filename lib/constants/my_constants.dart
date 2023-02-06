@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
-class myColors {
-  myColors._();
+class myConstants {
+  myConstants._();
   static var themeColor = Colors.purple;
 
   static double textFontSize = 25;
+  static double customButtonHeight = 40;
 
-  static var appBarTitleColor = Colors.purple.shade300;
+  static int codeTimeDuration = 60;
+
+  static var appBarTitleColor = themeColor.shade300;
   static var appBarBackgroundColor = Colors.white;
   static AppBarTheme myAppBarTheme = AppBarTheme(
     backgroundColor: appBarBackgroundColor,

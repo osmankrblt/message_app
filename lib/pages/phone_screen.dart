@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:provider/provider.dart';
-
-import 'package:message_app/constants/myGetterWidgets.dart';
 import 'package:message_app/widgets/custom_button.dart';
-
 import '../constants/utils.dart';
 import '../helper/firebase_provider.dart';
+import 'package:message_app/constants/my_constants.dart';
 
 class PhoneScreen extends StatefulWidget {
   @override
@@ -22,10 +20,9 @@ class _PhoneScreenState extends State<PhoneScreen> {
     final _isLoading =
         Provider.of<FirebaseProvider>(context, listen: true).isLoading;
     return Scaffold(
-      appBar: myGetterWidgets.getAppbar("PhoneNumber Screen"),
       body: SafeArea(
         child: _isLoading
-            ? Center(
+            ? const Center(
                 child: CircularProgressIndicator(
                   color: Colors.purple,
                 ),
@@ -42,27 +39,26 @@ class _PhoneScreenState extends State<PhoneScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        InternationalPhoneNumberInput(
-                          onInputChanged: (PhoneNumber number) {
-                            _phoneNumber = number;
-                          },
-                          selectorConfig: SelectorConfig(
-                            selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                        Container(
+                          height: 250,
+                          decoration: const BoxDecoration(
+                            color: Colors.transparent,
+                            shape: BoxShape.circle,
                           ),
-                          ignoreBlank: false,
-                          autoValidateMode: AutovalidateMode.disabled,
-                          selectorTextStyle: TextStyle(color: Colors.black),
-                          initialValue: _phoneNumber,
-                          formatInput: true,
-                          keyboardType: TextInputType.numberWithOptions(
-                              signed: true, decimal: true),
-                          inputBorder: OutlineInputBorder(),
+                          child: Image.asset(
+                            "assets/image2.png",
+                          ),
                         ),
+                        const SizedBox(
+                          height: 30,
+                        ),
+                        getPhoneInput(),
                         const SizedBox(
                           height: 27.0,
                         ),
                         SizedBox(
                           width: MediaQuery.of(context).size.width * 0.8,
+                          height: myConstants.customButtonHeight,
                           child: CustomButton(
                             text: "Login",
                             onPressed: () => verifyNumber(
@@ -75,6 +71,48 @@ class _PhoneScreenState extends State<PhoneScreen> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget getPhoneInput() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(),
+        borderRadius: BorderRadius.circular(
+          20,
+        ),
+      ),
+      child: InternationalPhoneNumberInput(
+        onInputChanged: (PhoneNumber number) {
+          _phoneNumber = number;
+        },
+        selectorConfig: SelectorConfig(
+          showFlags: true,
+          leadingPadding: 25,
+          selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+        ),
+        ignoreBlank: false,
+        autoValidateMode: AutovalidateMode.disabled,
+        selectorTextStyle: TextStyle(
+          color: Colors.black,
+        ),
+        initialValue: _phoneNumber,
+        maxLength: 14,
+        scrollPadding: EdgeInsets.all(
+          15,
+        ),
+        formatInput: true,
+        keyboardType: TextInputType.numberWithOptions(
+          signed: true,
+          decimal: true,
+        ),
+        cursorColor: myConstants.themeColor,
+        inputDecoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          hintText: "Phone number",
+        ),
       ),
     );
   }

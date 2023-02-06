@@ -4,7 +4,7 @@ import 'package:message_app/helper/firebase_provider.dart';
 import 'package:message_app/pages/login_page.dart';
 import 'package:message_app/pages/home_page.dart';
 import 'package:provider/provider.dart';
-import 'constants/myColors.dart';
+import 'constants/my_constants.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'constants/utils.dart';
@@ -34,8 +34,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Flutter Demo',
         theme: ThemeData(
-          primarySwatch: myColors.themeColor,
-          appBarTheme: myColors.myAppBarTheme,
+          primarySwatch: myConstants.themeColor,
+          appBarTheme: myConstants.myAppBarTheme,
         ),
         home: WelcomeScreen(),
       ),

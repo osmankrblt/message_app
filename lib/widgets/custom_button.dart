@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:message_app/constants/myColors.dart';
+import 'package:message_app/constants/my_constants.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -15,14 +15,6 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: onPressed,
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 16.0,
-          color: Colors.white,
-        ),
-        textAlign: TextAlign.center,
-      ),
       style: ButtonStyle(
         shape: MaterialStateProperty.all(
           RoundedRectangleBorder(
@@ -30,11 +22,19 @@ class CustomButton extends StatelessWidget {
           ),
         ),
         backgroundColor: MaterialStateProperty.all(
-          myColors.themeColor,
+          myConstants.themeColor,
         ),
         foregroundColor: MaterialStateProperty.all(
-          myColors.themeColor,
+          myConstants.themeColor,
         ),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 16.0,
+          color: Colors.white,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }

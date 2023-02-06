@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:message_app/constants/myColors.dart';
+import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/helper/firebase_provider.dart';
 
 class myGetterWidgets {
@@ -9,10 +9,10 @@ class myGetterWidgets {
       title: Text(
         title,
         style: TextStyle(
-          color: myColors.appBarTitleColor,
+          color: myConstants.appBarTitleColor,
         ),
       ),
-      backgroundColor: myColors.appBarBackgroundColor,
+      backgroundColor: myConstants.appBarBackgroundColor,
     );
   }
 }
