@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:contacts_service/contacts_service.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -37,8 +38,54 @@ class FirebaseProvider extends ChangeNotifier {
   bool _codeSentButton = true;
   bool get codeSentButton => _codeSentButton;
 
+  List<UserModel> _myFriends = [];
+  List<UserModel> get myFriends => _myFriends;
+
   FirebaseProvider() {
     checkSignInFromSP();
+  }
+  _contactsTakeAllNumbers() async {
+    List<Contact> contacts =
+        await ContactsService.getContacts(withThumbnails: false);
+    ;
+    List<String> _temp = [];
+    contacts.forEach((element) {
+      element.phones!.isNotEmpty
+          ? _temp.add(element.phones!.first.value.toString())
+          : null;
+    });
+
+    return _temp;
+  }
+
+  getAllContacts() async {
+    _myFriends = [];
+
+    List<String> numberList = await _contactsTakeAllNumbers();
+
+    numberList.forEach((element) async {
+      String _number = element.replaceAll(" ", "").trim();
+      print(_number);
+      QuerySnapshot snapshot = await _firebaseFirestore
+          .collection("users")
+          .where(
+            "phoneNumber",
+            isEqualTo: _number,
+          )
+          .get(
+            GetOptions(
+              source: Source.server,
+            ),
+          );
+
+      if (snapshot.docs.isNotEmpty) {
+        Map<String, dynamic> _user =
+            snapshot.docs.first.data() as Map<String, dynamic>;
+        _myFriends.add(UserModel.fromMap(_user));
+      }
+    });
+
+    notifyListeners();
   }
 
   Future syncUserProfile() async {
@@ -83,7 +130,7 @@ class FirebaseProvider extends ChangeNotifier {
       }
 
       _userModel = userModel;
-
+      print(_uid);
       await _firebaseFirestore
           .collection("users")
           .doc(_uid)
@@ -95,7 +142,21 @@ class FirebaseProvider extends ChangeNotifier {
 
       await setUserModelToSP();
     } on FirebaseAuthException catch (e) {
-      showSnackBar(context, e.message.toString());
+      showSnackBar(
+        context,
+        "Auth error",
+        e.message.toString(),
+        ContentType.warning,
+      );
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      showSnackBar(
+        context,
+        "Upload error",
+        e.toString(),
+        ContentType.warning,
+      );
       _isLoading = false;
       notifyListeners();
     }
@@ -140,7 +201,17 @@ class FirebaseProvider extends ChangeNotifier {
       await setUserModelToSP();
       await setSignInToSP();
     } on FirebaseAuthException catch (e) {
-      showSnackBar(context, e.message.toString());
+      showSnackBar(
+          context, "Auth error", e.message.toString(), ContentType.failure);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      showSnackBar(
+        context,
+        "Upload error",
+        e.toString(),
+        ContentType.warning,
+      );
       _isLoading = false;
       notifyListeners();
     }
@@ -203,11 +274,14 @@ class FirebaseProvider extends ChangeNotifier {
     String data = s.getString("user_model") ?? "";
     _userModel = UserModel.fromMap(jsonDecode(data));
 
+    _uid = auth.currentUser!.uid;
+
     notifyListeners();
   }
 
   Future<void> resendCode(BuildContext context) async {
-    showSnackBar(context, "Otp code will sent...");
+    showSnackBar(context, "Verification Code", "Otp code will sent...",
+        ContentType.help);
     await phoneVerify(context, phoneNumber);
   }
 
@@ -239,16 +313,24 @@ class FirebaseProvider extends ChangeNotifier {
         codeAutoRetrievalTimeout: (String verificationId) {
           print("Kod süresi doldu");
           _codeSentButton = false;
-          showSnackBar(context, "Now, you can sent new otp code...");
+          showSnackBar(context, "Verification code",
+              "Now, you can sent new otp code...", ContentType.warning);
           notifyListeners();
         },
         timeout: Duration(seconds: myConstants.codeTimeDuration),
       );
     } on FirebaseException catch (e) {
       showSnackBar(
+          context, "Auth Error", e.message.toString(), ContentType.failure);
+    } catch (e) {
+      showSnackBar(
         context,
-        e.message.toString(),
+        "Upload error",
+        e.toString(),
+        ContentType.warning,
       );
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -275,7 +357,17 @@ class FirebaseProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } on FirebaseAuthException catch (e) {
-      showSnackBar(context, e.message.toString());
+      showSnackBar(
+          context, "Auth error", e.message.toString(), ContentType.failure);
+    } catch (e) {
+      showSnackBar(
+        context,
+        "Upload error",
+        e.toString(),
+        ContentType.warning,
+      );
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

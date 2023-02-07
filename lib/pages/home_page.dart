@@ -1,9 +1,12 @@
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
+import 'package:message_app/pages/contacts_page.dart';
 import 'package:message_app/pages/update_user_information_screen.dart';
 import 'package:message_app/pages/user_information_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../constants/utils.dart';
 import '../helper/firebase_provider.dart';
@@ -19,14 +22,51 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final ap = Provider.of<FirebaseProvider>(context, listen: false);
 
-    return Scaffold(
-        drawer: myDrawer(ap, context),
-        body: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            color: Colors.purple,
+    return SafeArea(
+      child: Scaffold(
+          drawer: myDrawer(ap, context),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () async {
+              await getPermissions();
+
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ContactsPage(),
+                ),
+              );
+            },
+            child: const Icon(
+              Icons.people_outline,
+            ),
           ),
-        ));
+          body: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              color: Colors.purple,
+              child: Expanded(
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [Text("HomePage")]),
+              ),
+            ),
+          )),
+    );
+  }
+
+  getPermissions() async {
+    if (await Permission.contacts.request().isDenied) {
+      // Either the permission was already granted before or the user just granted it.
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.contacts,
+      ].request();
+    }
+    if (await Permission.contacts.request().isGranted) {
+      // Either the permission was already granted before or the user just granted it.
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.contacts,
+      ].request();
+    }
   }
 
   Drawer myDrawer(FirebaseProvider ap, BuildContext context) {
@@ -121,6 +161,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ).then((value) {
+                            showToast("Your profile updated");
+
                             setState(() {});
                           });
                         },
@@ -138,47 +180,41 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           ElevatedButton(
                             onPressed: () {
-                              try {
-                                ap.signOut().then(
-                                      (value) => Navigator.of(context)
-                                          .pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const WelcomeScreen(),
-                                        ),
-                                        (route) => false,
-                                      ),
-                                    );
-                                ;
-                              } catch (e) {
-                                showSnackBar(context, e.toString());
-                              }
+                              alertDialog(
+                                  context,
+                                  [
+                                    TextButton(
+                                      onPressed: () {
+                                        signOut(ap, context);
+                                      },
+                                      child: Text("Yes"),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {},
+                                      child: Text("No"),
+                                    ),
+                                  ],
+                                  "Are you sure you want to sign out?");
                             },
                             child: Text("Sign Out"),
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              try {
-                                ap.deleteAccount().then(
-                                      (value) => Navigator.of(context)
-                                          .pushAndRemoveUntil(
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const WelcomeScreen(),
-                                            ),
-                                            (route) => false,
-                                          )
-                                          .then(
-                                            (value) => showSnackBar(
-                                              context,
-                                              "Your account was deleted...",
-                                            ),
-                                          ),
-                                    );
-                                ;
-                              } catch (e) {
-                                showSnackBar(context, e.toString());
-                              }
+                              alertDialog(
+                                  context,
+                                  [
+                                    TextButton(
+                                      onPressed: () {
+                                        deleteAccount(ap, context);
+                                      },
+                                      child: Text("Yes"),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {},
+                                      child: Text("No"),
+                                    ),
+                                  ],
+                                  "Are you sure you want to delete account?");
                             },
                             child: Text("Delete Account"),
                           ),
@@ -193,5 +229,49 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  void signOut(FirebaseProvider ap, BuildContext context) {
+    try {
+      ap
+          .signOut()
+          .then(
+            (value) => Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const WelcomeScreen(),
+              ),
+              (route) => false,
+            ),
+          )
+          .then(
+            (value) => showToast(
+              "You are signed out",
+            ),
+          );
+      ;
+    } catch (e) {
+      showSnackBar(context, "Sign Out", e.toString(), ContentType.failure);
+    }
+  }
+
+  void deleteAccount(FirebaseProvider ap, BuildContext context) {
+    try {
+      ap.deleteAccount().then(
+            (value) => Navigator.of(context)
+                .pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const WelcomeScreen(),
+                  ),
+                  (route) => false,
+                )
+                .then(
+                  (value) => showSnackBar(context, "User profile",
+                      "Your account was deleted...", ContentType.help),
+                ),
+          );
+      ;
+    } catch (e) {
+      showSnackBar(context, "User profile", e.toString(), ContentType.failure);
+    }
   }
 }

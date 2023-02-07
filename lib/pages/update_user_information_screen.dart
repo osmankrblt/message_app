@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -145,9 +146,8 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
                         text: "Update",
                         onPressed: () {
                           updateData();
-                          showSnackBar(
-                            context,
-                            "Your profile updated...",
+                          showToast(
+                            "Your profile will update...",
                           );
                         },
                       ),
@@ -241,6 +241,8 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
           userModel: widget.userModel,
           profilePic: image,
         )
-        .then((value) => Navigator.of(context).pop());
+        .then(
+          (value) => Navigator.of(context).pop(),
+        );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:provider/provider.dart';
@@ -124,7 +125,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
     try {
       ap.phoneVerify(context, phoneNumber);
     } catch (e) {
-      showSnackBar(context, e.toString());
+      showSnackBar(context, "Phone verify", e.toString(), ContentType.failure);
     }
   }
 }
