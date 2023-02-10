@@ -1,12 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
-import 'package:message_app/constants/myGetterWidgets.dart';
 import 'package:message_app/constants/utils.dart';
 import 'package:message_app/widgets/custom_button.dart';
 import 'package:provider/provider.dart';
-
 import '../helper/firebase_provider.dart';
 import '../models/user_model.dart';
 import 'home_page.dart';
@@ -36,7 +33,7 @@ class _UserInformationPageState extends State<UserInformationPage> {
   }
 
   selectImage(BuildContext context) async {
-    image = await pickImage(context);
+    image = await pickImage();
 
     setState(() {});
   }
@@ -192,10 +189,10 @@ class _UserInformationPageState extends State<UserInformationPage> {
       createdAt: "",
       phoneNumber: "",
       uid: "",
+      feel: "",
     );
 
     ap.saveUserToFirebase(
-      context: context,
       userModel: userModel,
       profilePic: image,
       onSuccess: () {

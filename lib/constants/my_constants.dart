@@ -11,6 +11,30 @@ class myConstants {
 
   static var appBarTitleColor = themeColor.shade300;
   static var appBarBackgroundColor = Colors.white;
+
+  static List<String> emojiList = [
+    "",
+    "😀",
+    "😃",
+    "😄",
+    "😁",
+    "😆",
+    "😅",
+    "😂",
+    "🥲",
+    "🥹",
+    "😊",
+    "😇",
+    "🙂",
+    "🙃",
+    "😉",
+    "😌",
+    "😍",
+    "🥰",
+    "😘",
+    "😗",
+  ];
+
   static AppBarTheme myAppBarTheme = AppBarTheme(
     backgroundColor: appBarBackgroundColor,
     elevation: 5,

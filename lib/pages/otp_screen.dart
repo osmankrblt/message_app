@@ -1,17 +1,9 @@
-import 'dart:async';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
-
 import 'package:message_app/pages/home_page.dart';
 import 'package:message_app/widgets/custom_button.dart';
-
-import '../constants/utils.dart';
 import '../helper/firebase_provider.dart';
 import 'user_information_screen.dart';
 
@@ -166,7 +158,6 @@ class _OtpScreenState extends State<OtpScreen> {
   void verifyOtp(BuildContext context, String userOtp) {
     final ap = Provider.of<FirebaseProvider>(context, listen: false);
     ap.verifyOtp(
-      context: context,
       userOtp: userOtp,
       verificationId: widget.verificationId,
       onSuccess: () async {

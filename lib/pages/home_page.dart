@@ -1,11 +1,8 @@
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/pages/contacts_page.dart';
 import 'package:message_app/pages/update_user_information_screen.dart';
-import 'package:message_app/pages/user_information_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../constants/utils.dart';
@@ -18,6 +15,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late bool emojiPickerShow = false;
+
   @override
   Widget build(BuildContext context) {
     final ap = Provider.of<FirebaseProvider>(context, listen: false);
@@ -28,7 +27,7 @@ class _HomePageState extends State<HomePage> {
           floatingActionButton: FloatingActionButton(
             onPressed: () async {
               await getPermissions();
-
+              await ap.getAllContactsFromSP();
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => ContactsPage(),
@@ -45,9 +44,12 @@ class _HomePageState extends State<HomePage> {
               color: Colors.purple,
               child: Expanded(
                 child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [Text("HomePage")]),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text("HomePage"),
+                  ],
+                ),
               ),
             ),
           )),
@@ -130,13 +132,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 20,
-            ),
             Expanded(
               flex: 3,
               child: Container(
                 width: double.infinity,
+                height: double.infinity,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
                     fit: BoxFit.cover,
@@ -173,6 +173,24 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "How do you feel today?",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          emojiFeel(context, ap),
+                        ],
+                      ),
+                    ),
+                    Expanded(child: Container()),
                     SizedBox(
                       width: double.infinity,
                       child: Column(
@@ -231,6 +249,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  DropdownButton<String> emojiFeel(BuildContext context, FirebaseProvider ap) {
+    String emoji =
+        Provider.of<FirebaseProvider>(context, listen: true).userModel.feel;
+
+    return DropdownButton<String>(
+      value: emoji != "" ? emoji : "",
+      menuMaxHeight: MediaQuery.of(context).size.height * 0.3,
+      items: myConstants.emojiList.map((String e) {
+        return DropdownMenuItem<String>(
+          value: e,
+          child: Container(
+            child: Text(
+              e,
+            ),
+          ),
+        );
+      }).toList(),
+      onChanged: ((feel) {
+        ap.setEmoji(feel: feel.toString());
+        setState(() {});
+      }),
+    );
+  }
+
   void signOut(FirebaseProvider ap, BuildContext context) {
     try {
       ap
@@ -250,7 +292,9 @@ class _HomePageState extends State<HomePage> {
           );
       ;
     } catch (e) {
-      showSnackBar(context, "Sign Out", e.toString(), ContentType.failure);
+      showToast(
+        "Sign Out",
+      );
     }
   }
 
@@ -265,13 +309,16 @@ class _HomePageState extends State<HomePage> {
                   (route) => false,
                 )
                 .then(
-                  (value) => showSnackBar(context, "User profile",
-                      "Your account was deleted...", ContentType.help),
+                  (value) => showToast(
+                    "Your account was deleted...",
+                  ),
                 ),
           );
       ;
     } catch (e) {
-      showSnackBar(context, "User profile", e.toString(), ContentType.failure);
+      showToast(
+        "User profile",
+      );
     }
   }
 }

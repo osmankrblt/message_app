@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:message_app/constants/utils.dart';
 import 'package:message_app/helper/firebase_provider.dart';
 import 'package:message_app/pages/home_page.dart';
 import 'package:provider/provider.dart';
-
 import 'login_page.dart';
 
 class WelcomeScreen extends StatelessWidget {

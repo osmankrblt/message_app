@@ -1,11 +1,13 @@
+import 'dart:convert';
+
 class UserModel {
   String name;
   String profilePic;
-
   String bio;
   String phoneNumber;
   String uid;
   String createdAt;
+  String feel;
 
   UserModel({
     required this.name,
@@ -14,6 +16,7 @@ class UserModel {
     required this.phoneNumber,
     required this.uid,
     required this.createdAt,
+    required this.feel,
   });
 
   // fromMap
@@ -25,18 +28,31 @@ class UserModel {
       createdAt: map["createdAt"] ?? "",
       phoneNumber: map["phoneNumber"] ?? "",
       uid: map["uid"] ?? "",
+      feel: map["feel"] ?? "",
     );
   }
 // to map
 
-  Map<String, dynamic> toMap() {
+  static Map<String, dynamic> toMap(UserModel user) {
     return {
-      "name": name,
-      "uid": uid,
-      "bio": bio,
-      "profilePic": profilePic,
-      "phoneNumber": phoneNumber,
-      "createdAt": createdAt
+      "name": user.name,
+      "uid": user.uid,
+      "bio": user.bio,
+      "profilePic": user.profilePic,
+      "phoneNumber": user.phoneNumber,
+      "createdAt": user.createdAt,
+      "feel": user.feel,
     };
   }
+
+  static String encode(List<UserModel> users) => jsonEncode(
+        users
+            .map<Map<String, dynamic>>((user) => UserModel.toMap(user))
+            .toList(),
+      );
+
+  static List<UserModel> decode(String friends) =>
+      (jsonDecode(friends) as List<dynamic>)
+          .map<UserModel>((item) => UserModel.fromMap(item))
+          .toList();
 }

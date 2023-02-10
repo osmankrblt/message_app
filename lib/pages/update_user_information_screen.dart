@@ -1,18 +1,12 @@
 import 'dart:io';
-
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import 'package:message_app/constants/myGetterWidgets.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/constants/utils.dart';
 import 'package:message_app/widgets/custom_button.dart';
-
 import '../helper/firebase_provider.dart';
 import '../models/user_model.dart';
-import 'home_page.dart';
 
 class UpdateUserInformationPage extends StatefulWidget {
   UserModel userModel;
@@ -52,8 +46,8 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
     bioController.dispose();
   }
 
-  selectImage(BuildContext context) async {
-    image = await pickImage(context);
+  selectImage() async {
+    image = await pickImage();
 
     setState(() {});
   }
@@ -95,7 +89,7 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
                       ],
                     ),
                     InkWell(
-                      onTap: () => selectImage(context),
+                      onTap: () => selectImage(),
                       child: image == null
                           ? CachedNetworkImage(
                               fit: BoxFit.contain,
@@ -237,7 +231,6 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
 
     ap
         .updateData(
-          context: context,
           userModel: widget.userModel,
           profilePic: image,
         )

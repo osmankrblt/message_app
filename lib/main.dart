@@ -28,7 +28,8 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Flutter Demo',
+        title: "Let's chat 😶‍🌫️",
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: myConstants.themeColor,
           appBarTheme: myConstants.myAppBarTheme,

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/pages/phone_screen.dart';
 import 'package:message_app/widgets/custom_button.dart';
-import '../constants/utils.dart';
-import 'otp_screen.dart';
 
 class LoginPage extends StatelessWidget {
   @override

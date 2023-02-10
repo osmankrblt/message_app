@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:contacts_service/contacts_service.dart';
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/pages/otp_screen.dart';
@@ -58,34 +58,66 @@ class FirebaseProvider extends ChangeNotifier {
     return _temp;
   }
 
-  getAllContacts() async {
-    _myFriends = [];
+//Friends funcs
 
-    List<String> numberList = await _contactsTakeAllNumbers();
+  setAllContactsToSP() async {
+    final SharedPreferences s = await SharedPreferences.getInstance();
 
-    numberList.forEach((element) async {
-      String _number = element.replaceAll(" ", "").trim();
-      print(_number);
-      QuerySnapshot snapshot = await _firebaseFirestore
-          .collection("users")
-          .where(
-            "phoneNumber",
-            isEqualTo: _number,
-          )
-          .get(
-            GetOptions(
-              source: Source.server,
-            ),
-          );
+    final String encodedData = UserModel.encode(_myFriends);
+    s.setString(
+      "my_friends",
+      encodedData,
+    );
+    print("Arkadaşlar kaydedildi ${_myFriends.length.toString()}");
+    print("Arkadaşlar kaydedildi $encodedData");
+  }
 
-      if (snapshot.docs.isNotEmpty) {
-        Map<String, dynamic> _user =
-            snapshot.docs.first.data() as Map<String, dynamic>;
-        _myFriends.add(UserModel.fromMap(_user));
-      }
-    });
+  getAllContactsFromSP() async {
+    final SharedPreferences s = await SharedPreferences.getInstance();
 
-    notifyListeners();
+    final String friendsString = s.getString('my_friends') ?? "";
+
+    if (friendsString != "") {
+      print(s.getString('my_friends'));
+      _myFriends = UserModel.decode(friendsString);
+      notifyListeners();
+    } else {
+      _myFriends = [];
+    }
+
+    print("Arkadaşlar okundu sayı ${_myFriends.length.toString()}");
+  }
+
+  syncAllContacts() async {
+    List<String> _numberList = await _contactsTakeAllNumbers();
+    List<UserModel> _temp = [];
+    _numberList.forEach(
+      (element) async {
+        String _number = element.replaceAll(" ", "").trim();
+
+        QuerySnapshot snapshot = await _firebaseFirestore
+            .collection("users")
+            .where(
+              "phoneNumber",
+              isEqualTo: _number,
+            )
+            .get(
+              GetOptions(
+                source: Source.server,
+              ),
+            );
+
+        if (snapshot.docs.isNotEmpty) {
+          Map<String, dynamic> _user =
+              snapshot.docs.first.data() as Map<String, dynamic>;
+          _temp.add(UserModel.fromMap(_user));
+
+          await setAllContactsToSP();
+        }
+        _myFriends = _temp;
+        notifyListeners();
+      },
+    );
   }
 
   Future syncUserProfile() async {
@@ -100,6 +132,7 @@ class FirebaseProvider extends ChangeNotifier {
 
       await setUserModelToSP();
       await setSignInToSP();
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -112,7 +145,6 @@ class FirebaseProvider extends ChangeNotifier {
 
 // DATABASE PROCESS
   Future<void> updateData({
-    required BuildContext context,
     required UserModel userModel,
     required File? profilePic,
   }) async {
@@ -130,11 +162,11 @@ class FirebaseProvider extends ChangeNotifier {
       }
 
       _userModel = userModel;
-      print(_uid);
+
       await _firebaseFirestore
           .collection("users")
           .doc(_uid)
-          .update(userModel.toMap())
+          .update(UserModel.toMap(userModel))
           .then((value) {
         _isLoading = false;
         notifyListeners();
@@ -142,28 +174,40 @@ class FirebaseProvider extends ChangeNotifier {
 
       await setUserModelToSP();
     } on FirebaseAuthException catch (e) {
-      showSnackBar(
-        context,
+      showToast(
         "Auth error",
-        e.message.toString(),
-        ContentType.warning,
       );
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      showSnackBar(
-        context,
+      showToast(
         "Upload error",
-        e.toString(),
-        ContentType.warning,
       );
-      _isLoading = false;
+    }
+  }
+
+  Future<void> setEmoji({
+    required String feel,
+  }) async {
+    try {
+      _userModel!.feel = feel;
       notifyListeners();
+      await _firebaseFirestore
+          .collection("users")
+          .doc(_uid)
+          .update({"feel": feel});
+
+      await setUserModelToSP();
+    } on FirebaseAuthException catch (e) {
+      showToast(
+        "Auth error",
+      );
+    } catch (e) {
+      showToast(
+        "Upload error",
+      );
     }
   }
 
   Future saveUserToFirebase({
-    required BuildContext context,
     required UserModel userModel,
     required File? profilePic,
     required Function onSuccess,
@@ -190,7 +234,7 @@ class FirebaseProvider extends ChangeNotifier {
           .collection("users")
           .doc(_uid)
           .set(
-            userModel.toMap(),
+            UserModel.toMap(userModel),
           )
           .then((value) {
         onSuccess();
@@ -201,16 +245,14 @@ class FirebaseProvider extends ChangeNotifier {
       await setUserModelToSP();
       await setSignInToSP();
     } on FirebaseAuthException catch (e) {
-      showSnackBar(
-          context, "Auth error", e.message.toString(), ContentType.failure);
+      showToast(
+        "Auth error",
+      );
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      showSnackBar(
-        context,
+      showToast(
         "Upload error",
-        e.toString(),
-        ContentType.warning,
       );
       _isLoading = false;
       notifyListeners();
@@ -263,7 +305,7 @@ class FirebaseProvider extends ChangeNotifier {
   Future setUserModelToSP() async {
     final SharedPreferences s = await SharedPreferences.getInstance();
 
-    s.setString("user_model", jsonEncode(_userModel!.toMap()));
+    s.setString("user_model", jsonEncode(UserModel.toMap(_userModel!)));
 
     print("Model kaydedildi");
   }
@@ -280,8 +322,9 @@ class FirebaseProvider extends ChangeNotifier {
   }
 
   Future<void> resendCode(BuildContext context) async {
-    showSnackBar(context, "Verification Code", "Otp code will sent...",
-        ContentType.help);
+    showToast(
+      "Otp code will sent...",
+    );
     await phoneVerify(context, phoneNumber);
   }
 
@@ -313,21 +356,20 @@ class FirebaseProvider extends ChangeNotifier {
         codeAutoRetrievalTimeout: (String verificationId) {
           print("Kod süresi doldu");
           _codeSentButton = false;
-          showSnackBar(context, "Verification code",
-              "Now, you can sent new otp code...", ContentType.warning);
+          showToast(
+            "Now, you can sent new otp code...",
+          );
           notifyListeners();
         },
         timeout: Duration(seconds: myConstants.codeTimeDuration),
       );
     } on FirebaseException catch (e) {
-      showSnackBar(
-          context, "Auth Error", e.message.toString(), ContentType.failure);
+      showToast(
+        "Auth Error",
+      );
     } catch (e) {
-      showSnackBar(
-        context,
+      showToast(
         "Upload error",
-        e.toString(),
-        ContentType.warning,
       );
       _isLoading = false;
       notifyListeners();
@@ -335,8 +377,7 @@ class FirebaseProvider extends ChangeNotifier {
   }
 
   void verifyOtp(
-      {required BuildContext context,
-      required String verificationId,
+      {required String verificationId,
       required String userOtp,
       required Function onSuccess}) async {
     _isLoading = true;
@@ -357,14 +398,12 @@ class FirebaseProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } on FirebaseAuthException catch (e) {
-      showSnackBar(
-          context, "Auth error", e.message.toString(), ContentType.failure);
+      showToast(
+        "Auth error",
+      );
     } catch (e) {
-      showSnackBar(
-        context,
+      showToast(
         "Upload error",
-        e.toString(),
-        ContentType.warning,
       );
       _isLoading = false;
       notifyListeners();
