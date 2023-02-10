@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:message_app/helper/database_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/constants/utils.dart';
 import 'package:message_app/widgets/custom_button.dart';
-import '../helper/firebase_provider.dart';
+import '../helper/auth_provider.dart';
 import '../models/user_model.dart';
 
 class UpdateUserInformationPage extends StatefulWidget {
@@ -23,10 +24,10 @@ class UpdateUserInformationPage extends StatefulWidget {
 
 class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
   File? image = null;
-
+  final _formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
-
   final bioController = TextEditingController();
+
   @override
   void initState() {
     // TODO: implement initState
@@ -54,9 +55,9 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ap = Provider.of<FirebaseProvider>(context, listen: false);
+    final dp = Provider.of<DatabaseProvider>(context, listen: false);
     final _isLoading =
-        Provider.of<FirebaseProvider>(context, listen: true).isLoading;
+        Provider.of<AuthProvider>(context, listen: true).isLoading;
     return Scaffold(
       body: SafeArea(
         child: _isLoading
@@ -70,83 +71,95 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
                   horizontal: 25.0,
                   vertical: 5.0,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: Icon(
-                            Icons.arrow_back,
-                            color: myConstants.themeColor,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            icon: Icon(
+                              Icons.arrow_back,
+                              color: myConstants.themeColor,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    InkWell(
-                      onTap: () => selectImage(),
-                      child: image == null
-                          ? CachedNetworkImage(
-                              fit: BoxFit.contain,
-                              imageUrl: ap.userModel.profilePic,
-                              cacheKey: ap.userModel.profilePic,
-                              imageBuilder: (context, imageProvider) =>
-                                  CircleAvatar(
+                        ],
+                      ),
+                      InkWell(
+                        onTap: () => selectImage(),
+                        child: image == null
+                            ? (dp.userModel.profilePic != ""
+                                ? CachedNetworkImage(
+                                    fit: BoxFit.contain,
+                                    imageUrl: dp.userModel.profilePic,
+                                    imageBuilder: (context, imageProvider) =>
+                                        CircleAvatar(
+                                      radius: 65,
+                                      backgroundImage: imageProvider,
+                                    ),
+                                    placeholder: (context, url) => CircleAvatar(
+                                      radius: 65,
+                                      child: const CircularProgressIndicator(),
+                                    ),
+                                  )
+                                : CircleAvatar(
+                                    radius: 65,
+                                    backgroundColor: myConstants.themeColor,
+                                    child: const Icon(
+                                      Icons.account_circle,
+                                      color: Colors.white,
+                                      size: 50,
+                                    ),
+                                  ))
+                            : CircleAvatar(
                                 radius: 65,
-                                backgroundImage: imageProvider,
-                              ),
-                              placeholder: (context, url) =>
-                                  const CircularProgressIndicator(),
-                              errorWidget: (context, url, error) =>
-                                  CircleAvatar(
-                                backgroundColor: myConstants.themeColor,
-                                child: const Icon(
-                                  Icons.account_circle,
-                                  color: Colors.white,
-                                  size: 50,
+                                backgroundImage: FileImage(
+                                  image!,
                                 ),
                               ),
-                            )
-                          : CircleAvatar(
-                              radius: 65,
-                              backgroundImage: FileImage(image!),
-                            ),
-                    ),
-                    const SizedBox(
-                      height: 25,
-                    ),
-                    getInputField(
-                      hintText: "Robert Downey Jr.",
-                      controller: nameController,
-                      icon: Icons.home,
-                      inputType: TextInputType.name,
-                      maxLine: 1,
-                    ),
-                    getInputField(
-                      hintText: "You know who I am",
-                      controller: bioController,
-                      icon: Icons.text_fields_outlined,
-                      inputType: TextInputType.name,
-                      maxLine: 2,
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      child: CustomButton(
-                        text: "Update",
-                        onPressed: () {
-                          updateData();
-                          showToast(
-                            "Your profile will update...",
-                          );
-                        },
                       ),
-                    ),
-                  ],
+                      const SizedBox(
+                        height: 25,
+                      ),
+                      getInputField(
+                        hintText: "Robert Downey Jr.",
+                        controller: nameController,
+                        icon: Icons.home,
+                        inputType: TextInputType.name,
+                        maxLine: 1,
+                      ),
+                      getInputField(
+                        hintText: "You know who I am",
+                        controller: bioController,
+                        icon: Icons.text_fields_outlined,
+                        inputType: TextInputType.name,
+                        maxLine: 2,
+                      ),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.8,
+                        child: CustomButton(
+                          text: "Update",
+                          onPressed: () async {
+                            if (await checkInternetStatus()) {
+                              updateData();
+                              showToast(
+                                "Your profile will update...",
+                              );
+                            } else {
+                              showToast(
+                                  "No internet to update.Try again later.");
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
       ),
@@ -164,6 +177,14 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
       padding: const EdgeInsets.only(bottom: 15.0),
       child: TextFormField(
         controller: controller,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return "Value  musn't be empty";
+          } else if (value.length < 10) {
+            return "Value length must be at least 10 characters ";
+          }
+          return null;
+        },
         maxLines: maxLine,
         keyboardType: inputType,
         onChanged: (value) {
@@ -224,18 +245,20 @@ class _UpdateUserInformationPageState extends State<UpdateUserInformationPage> {
   }
 
   void updateData() async {
-    final ap = Provider.of<FirebaseProvider>(context, listen: false);
+    if (_formKey.currentState!.validate()) {
+      final dp = Provider.of<DatabaseProvider>(context, listen: false);
 
-    widget.userModel.name = nameController.text;
-    widget.userModel.bio = bioController.text;
+      widget.userModel.name = nameController.text;
+      widget.userModel.bio = bioController.text;
 
-    ap
-        .updateData(
-          userModel: widget.userModel,
-          profilePic: image,
-        )
-        .then(
-          (value) => Navigator.of(context).pop(),
-        );
+      dp
+          .updateUserProfile(
+            userModel: widget.userModel,
+            profilePic: image,
+          )
+          .then(
+            (value) => Navigator.of(context).pop(),
+          );
+    }
   }
 }

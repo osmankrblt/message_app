@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/constants/utils.dart';
+import 'package:message_app/helper/database_provider.dart';
 import 'package:message_app/widgets/custom_button.dart';
 import 'package:provider/provider.dart';
-import '../helper/firebase_provider.dart';
 import '../models/user_model.dart';
 import 'home_page.dart';
 
@@ -18,8 +18,9 @@ class UserInformationPage extends StatefulWidget {
 class _UserInformationPageState extends State<UserInformationPage> {
   File? image = null;
 
-  final nameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
+  final nameController = TextEditingController();
   final bioController = TextEditingController();
 
   @override
@@ -41,7 +42,7 @@ class _UserInformationPageState extends State<UserInformationPage> {
   @override
   Widget build(BuildContext context) {
     final _isLoading =
-        Provider.of<FirebaseProvider>(context, listen: true).isLoading;
+        Provider.of<DatabaseProvider>(context, listen: true).isLoading;
     return Scaffold(
       body: SafeArea(
         child: _isLoading
@@ -55,54 +56,64 @@ class _UserInformationPageState extends State<UserInformationPage> {
                   horizontal: 25.0,
                   vertical: 5.0,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    InkWell(
-                      onTap: () => selectImage(context),
-                      child: image == null
-                          ? CircleAvatar(
-                              backgroundColor: myConstants.themeColor,
-                              radius: 65,
-                              child: const Icon(
-                                Icons.account_circle,
-                                size: 50,
-                                color: Colors.white,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () => selectImage(context),
+                        child: image == null
+                            ? CircleAvatar(
+                                backgroundColor: myConstants.themeColor,
+                                radius: 65,
+                                child: const Icon(
+                                  Icons.account_circle,
+                                  size: 50,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : CircleAvatar(
+                                radius: 65,
+                                backgroundImage: FileImage(
+                                  image!,
+                                ),
                               ),
-                            )
-                          : CircleAvatar(
-                              radius: 65,
-                              backgroundImage: FileImage(image!),
-                            ),
-                    ),
-                    const SizedBox(
-                      height: 25,
-                    ),
-                    getInputField(
-                      hintText: "Robert Downey Jr.",
-                      controller: nameController,
-                      icon: Icons.home,
-                      inputType: TextInputType.name,
-                      maxLine: 1,
-                    ),
-                    getInputField(
-                      hintText: "You know who I am",
-                      controller: bioController,
-                      icon: Icons.text_fields_outlined,
-                      inputType: TextInputType.name,
-                      maxLine: 2,
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      child: CustomButton(
-                        text: "Sign In",
-                        onPressed: () {
-                          storeData();
-                        },
                       ),
-                    ),
-                  ],
+                      const SizedBox(
+                        height: 25,
+                      ),
+                      getInputField(
+                        hintText: "Robert Downey Jr.",
+                        controller: nameController,
+                        icon: Icons.home,
+                        inputType: TextInputType.name,
+                        maxLine: 1,
+                      ),
+                      getInputField(
+                        hintText: "You know who I am",
+                        controller: bioController,
+                        icon: Icons.text_fields_outlined,
+                        inputType: TextInputType.name,
+                        maxLine: 2,
+                      ),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.8,
+                        child: CustomButton(
+                          text: "Sign In",
+                          onPressed: () async {
+                            if (await checkInternetStatus()) {
+                              storeData();
+                            } else {
+                              showToast(
+                                  "No internet to sign in.Try again later.");
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
       ),
@@ -119,6 +130,13 @@ class _UserInformationPageState extends State<UserInformationPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15.0),
       child: TextFormField(
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return "Value  musn't be empty";
+          } else if (value.length < 10) {
+            return "Value length must be at least 10 characters ";
+          }
+        },
         controller: controller,
         maxLines: maxLine,
         keyboardType: inputType,
@@ -127,7 +145,8 @@ class _UserInformationPageState extends State<UserInformationPage> {
 
           setState(() {
             controller.selection = TextSelection.fromPosition(
-                TextPosition(offset: controller.text.length));
+              TextPosition(offset: controller.text.length),
+            );
           });
         },
         cursorColor: Colors.purple,
@@ -180,32 +199,32 @@ class _UserInformationPageState extends State<UserInformationPage> {
   }
 
   void storeData() async {
-    final ap = Provider.of<FirebaseProvider>(context, listen: false);
+    if (_formKey.currentState!.validate()) {
+      final dp = Provider.of<DatabaseProvider>(context, listen: false);
 
-    UserModel userModel = UserModel(
-      name: nameController.text.trim(),
-      bio: bioController.text,
-      profilePic: "",
-      createdAt: "",
-      phoneNumber: "",
-      uid: "",
-      feel: "",
-    );
+      UserModel userModel = UserModel(
+        name: nameController.text.trim(),
+        bio: bioController.text,
+        profilePic: "",
+        createdAt: "",
+        phoneNumber: "",
+        uid: "",
+        feel: "",
+      );
 
-    ap.saveUserToFirebase(
-      userModel: userModel,
-      profilePic: image,
-      onSuccess: () {
-        ap.setUserModelToSP().then(
-              (value) => ap.setSignInToSP().then(
-                    (value) => Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => HomePage(),
-                        ),
-                        (route) => false),
-                  ),
-            );
-      },
-    );
+      dp.saveUserToFirebase(
+        userModel: userModel,
+        profilePic: image,
+        onSuccess: () {
+          dp.setSignInToSP().then(
+                (value) => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (context) => HomePage(),
+                    ),
+                    (route) => false),
+              );
+        },
+      );
+    }
   }
 }

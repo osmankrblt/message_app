@@ -1,8 +1,20 @@
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:message_app/constants/my_constants.dart';
+
+checkInternetStatus() async {
+  final connectivityResult = await (Connectivity().checkConnectivity());
+
+  if (connectivityResult == ConnectivityResult.mobile ||
+      connectivityResult == ConnectivityResult.wifi) {
+    return true;
+  } else if (connectivityResult == ConnectivityResult.none) {
+    return false;
+  }
+}
 
 alertDialog(BuildContext context, List<Widget> buttons, String? content) {
   if (content == null) return;

@@ -3,7 +3,7 @@ import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:provider/provider.dart';
 import 'package:message_app/widgets/custom_button.dart';
 import '../constants/utils.dart';
-import '../helper/firebase_provider.dart';
+import '../helper/auth_provider.dart';
 import 'package:message_app/constants/my_constants.dart';
 
 class PhoneScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
   @override
   Widget build(BuildContext context) {
     final _isLoading =
-        Provider.of<FirebaseProvider>(context, listen: true).isLoading;
+        Provider.of<AuthProvider>(context, listen: true).isLoading;
     return Scaffold(
       body: SafeArea(
         child: _isLoading
@@ -61,9 +61,15 @@ class _PhoneScreenState extends State<PhoneScreen> {
                           height: myConstants.customButtonHeight,
                           child: CustomButton(
                             text: "Login",
-                            onPressed: () => verifyNumber(
-                              _phoneNumber.phoneNumber,
-                            ),
+                            onPressed: () async {
+                              if (await checkInternetStatus()) {
+                                verifyNumber(
+                                  _phoneNumber.phoneNumber,
+                                );
+                              } else {
+                                showToast("No internet for verify number");
+                              }
+                            },
                           ),
                         ),
                       ],
@@ -85,7 +91,9 @@ class _PhoneScreenState extends State<PhoneScreen> {
       ),
       child: InternationalPhoneNumberInput(
         onInputChanged: (PhoneNumber number) {
-          _phoneNumber = number;
+          if (number.phoneNumber!.length > 5) {
+            _phoneNumber = number;
+          }
         },
         selectorConfig: SelectorConfig(
           showFlags: true,
@@ -103,10 +111,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
           15,
         ),
         formatInput: true,
-        keyboardType: TextInputType.numberWithOptions(
-          signed: true,
-          decimal: true,
-        ),
+        keyboardType: TextInputType.phone,
         cursorColor: myConstants.themeColor,
         inputDecoration: InputDecoration(
           filled: true,
@@ -119,7 +124,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
 
   Future<void> verifyNumber(phoneNumber) async {
     phoneNumber = phoneNumber;
-    final ap = Provider.of<FirebaseProvider>(context, listen: false);
+    final ap = Provider.of<AuthProvider>(context, listen: false);
 
     try {
       ap.phoneVerify(context, phoneNumber);

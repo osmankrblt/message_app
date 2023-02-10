@@ -1,12 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:message_app/widgets/get_my_widgets.dart';
 import 'package:message_app/constants/my_constants.dart';
+import 'package:message_app/helper/contacts_provider.dart';
+import 'package:message_app/helper/database_provider.dart';
 import 'package:message_app/pages/contacts_page.dart';
 import 'package:message_app/pages/update_user_information_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../constants/utils.dart';
-import '../helper/firebase_provider.dart';
+import '../helper/auth_provider.dart';
 import 'welcome_screen.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,44 +18,48 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late bool emojiPickerShow = false;
-
   @override
   Widget build(BuildContext context) {
-    final ap = Provider.of<FirebaseProvider>(context, listen: false);
+    final cp = Provider.of<ContactsProvider>(context, listen: false);
+    final dp = Provider.of<DatabaseProvider>(context, listen: false);
+    final ap = Provider.of<AuthProvider>(context, listen: false);
 
     return SafeArea(
       child: Scaffold(
-          drawer: myDrawer(ap, context),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () async {
-              await getPermissions();
-              await ap.getAllContactsFromSP();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ContactsPage(),
-                ),
-              );
-            },
-            child: const Icon(
-              Icons.people_outline,
-            ),
+        drawer: myDrawer(context, ap, dp),
+        appBar: getAppbar("Chatobur"),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () async {
+            await getPermissions();
+            await cp.getAllContactsFromSP();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ContactsPage(),
+              ),
+            );
+          },
+          child: const Icon(
+            Icons.people_outline,
           ),
-          body: Padding(
-            padding: const EdgeInsets.all(8.0),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Center(
             child: Container(
               color: Colors.purple,
-              child: Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text("HomePage"),
-                  ],
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    "HomePage",
+                  ),
+                ],
               ),
             ),
-          )),
+          ),
+        ),
+      ),
     );
   }
 
@@ -71,7 +78,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Drawer myDrawer(FirebaseProvider ap, BuildContext context) {
+  Drawer myDrawer(BuildContext context, AuthProvider ap, DatabaseProvider dp) {
     return Drawer(
       child: Center(
         child: Column(
@@ -90,24 +97,26 @@ class _HomePageState extends State<HomePage> {
                 ),
                 currentAccountPicture: InkWell(
                   onTap: () {},
-                  child: CachedNetworkImage(
-                    fit: BoxFit.cover,
-                    imageUrl: ap.userModel.profilePic,
-                    cacheKey: ap.userModel.profilePic,
-                    imageBuilder: (context, imageProvider) => CircleAvatar(
-                      backgroundImage: imageProvider,
-                    ),
-                    placeholder: (context, url) =>
-                        const CircularProgressIndicator(),
-                    errorWidget: (context, url, error) => CircleAvatar(
-                      backgroundColor: myConstants.themeColor,
-                      child: const Icon(
-                        Icons.account_circle,
-                        color: Colors.white,
-                        size: 50,
-                      ),
-                    ),
-                  ),
+                  child: dp.userModel.profilePic != ""
+                      ? CachedNetworkImage(
+                          fit: BoxFit.cover,
+                          imageUrl: dp.userModel.profilePic,
+                          cacheKey: dp.userModel.profilePic,
+                          imageBuilder: (context, imageProvider) =>
+                              CircleAvatar(
+                            backgroundImage: imageProvider,
+                          ),
+                          placeholder: (context, url) =>
+                              const CircularProgressIndicator(),
+                        )
+                      : CircleAvatar(
+                          backgroundColor: myConstants.themeColor,
+                          child: const Icon(
+                            Icons.account_circle,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
                 ),
                 currentAccountPictureSize: const Size.square(
                   120,
@@ -115,7 +124,7 @@ class _HomePageState extends State<HomePage> {
                 accountName: InkWell(
                   onTap: () {},
                   child: Text(
-                    ap.userModel.name,
+                    dp.userModel.name,
                     style: const TextStyle(
                       fontSize: 20,
                     ),
@@ -124,7 +133,7 @@ class _HomePageState extends State<HomePage> {
                 accountEmail: InkWell(
                   onTap: () {},
                   child: Text(
-                    ap.userModel.bio,
+                    dp.userModel.bio,
                     style: const TextStyle(
                       fontSize: 20,
                     ),
@@ -157,7 +166,7 @@ class _HomePageState extends State<HomePage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => UpdateUserInformationPage(
-                                userModel: ap.userModel,
+                                userModel: dp.userModel,
                               ),
                             ),
                           ).then((value) {
@@ -186,7 +195,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
-                          emojiFeel(context, ap),
+                          emojiFeel(context, ap, dp),
                         ],
                       ),
                     ),
@@ -203,7 +212,7 @@ class _HomePageState extends State<HomePage> {
                                   [
                                     TextButton(
                                       onPressed: () {
-                                        signOut(ap, context);
+                                        signOut(dp, context);
                                       },
                                       child: Text("Yes"),
                                     ),
@@ -223,7 +232,7 @@ class _HomePageState extends State<HomePage> {
                                   [
                                     TextButton(
                                       onPressed: () {
-                                        deleteAccount(ap, context);
+                                        deleteAccount(dp, context);
                                       },
                                       child: Text("Yes"),
                                     ),
@@ -249,9 +258,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  DropdownButton<String> emojiFeel(BuildContext context, FirebaseProvider ap) {
+  DropdownButton<String> emojiFeel(
+      BuildContext context, AuthProvider ap, DatabaseProvider dp) {
     String emoji =
-        Provider.of<FirebaseProvider>(context, listen: true).userModel.feel;
+        Provider.of<DatabaseProvider>(context, listen: true).userModel.feel;
 
     return DropdownButton<String>(
       value: emoji != "" ? emoji : "",
@@ -267,40 +277,15 @@ class _HomePageState extends State<HomePage> {
         );
       }).toList(),
       onChanged: ((feel) {
-        ap.setEmoji(feel: feel.toString());
+        dp.updateUserFeel(feel: feel.toString());
         setState(() {});
       }),
     );
   }
 
-  void signOut(FirebaseProvider ap, BuildContext context) {
+  void signOut(DatabaseProvider dp, BuildContext context) {
     try {
-      ap
-          .signOut()
-          .then(
-            (value) => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (context) => const WelcomeScreen(),
-              ),
-              (route) => false,
-            ),
-          )
-          .then(
-            (value) => showToast(
-              "You are signed out",
-            ),
-          );
-      ;
-    } catch (e) {
-      showToast(
-        "Sign Out",
-      );
-    }
-  }
-
-  void deleteAccount(FirebaseProvider ap, BuildContext context) {
-    try {
-      ap.deleteAccount().then(
+      dp.signOut().then(
             (value) => Navigator.of(context)
                 .pushAndRemoveUntil(
                   MaterialPageRoute(
@@ -310,14 +295,36 @@ class _HomePageState extends State<HomePage> {
                 )
                 .then(
                   (value) => showToast(
-                    "Your account was deleted...",
+                    "You are signed out",
                   ),
                 ),
           );
-      ;
     } catch (e) {
       showToast(
-        "User profile",
+        "Sign Out",
+      );
+    }
+  }
+
+  void deleteAccount(DatabaseProvider dp, BuildContext context) {
+    try {
+      dp.deleteAccount().then(
+            (value) => Navigator.of(context)
+                .pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const WelcomeScreen(),
+                  ),
+                  (route) => false,
+                )
+                .then(
+                  (value) => showToast(
+                    "Your account was deleted",
+                  ),
+                ),
+          );
+    } catch (e) {
+      showToast(
+        "User profile error",
       );
     }
   }

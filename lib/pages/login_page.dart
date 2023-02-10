@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
+import 'package:message_app/constants/utils.dart';
 import 'package:message_app/pages/phone_screen.dart';
 import 'package:message_app/widgets/custom_button.dart';
 
@@ -30,12 +31,18 @@ class LoginPage extends StatelessWidget {
                 width: MediaQuery.of(context).size.width * 0.8,
                 height: myConstants.customButtonHeight,
                 child: CustomButton(
-                  onPressed: (() => Navigator.push(
+                  onPressed: () async {
+                    if (await checkInternetStatus()) {
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => PhoneScreen(),
                         ),
-                      )),
+                      );
+                    } else {
+                      showToast("No internet to login");
+                    }
+                  },
                   text: "Login with Phone Number",
                 ),
               )

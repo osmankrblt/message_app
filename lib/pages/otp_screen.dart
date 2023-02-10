@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
+import 'package:message_app/constants/utils.dart';
+import 'package:message_app/helper/database_provider.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
 import 'package:message_app/pages/home_page.dart';
 import 'package:message_app/widgets/custom_button.dart';
-import '../helper/firebase_provider.dart';
+import '../helper/auth_provider.dart';
 import 'user_information_screen.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -21,34 +24,65 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> {
   String? otpCode;
+  int resendTime = myConstants.codeTimeDuration;
+  Timer? timer;
+  bool resendOtpButton = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    timer = Timer(
+      Duration(seconds: myConstants.codeTimeDuration),
+      () {
+        showToast(
+          "Now, you can sent new otp code...",
+        );
+        resendOtpButton = true;
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final ap = Provider.of<FirebaseProvider>(context, listen: true);
-
+    final _isLoading =
+        Provider.of<AuthProvider>(context, listen: true).isLoading;
+    timer;
     return Scaffold(
         resizeToAvoidBottomInset: false,
         body: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                height: 250,
-                decoration: const BoxDecoration(
-                  color: Colors.transparent,
-                  shape: BoxShape.circle,
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.purple,
+                  ),
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 250,
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Image.asset(
+                        "assets/image3.png",
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    getVerify(),
+                  ],
                 ),
-                child: Image.asset(
-                  "assets/image3.png",
-                ),
-              ),
-              const SizedBox(
-                height: 30,
-              ),
-              getVerify(),
-            ],
-          ),
         ));
   }
 
@@ -107,15 +141,19 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ),
               child: Text(
-                "${myConstants.codeTimeDuration.toString()}",
+                "${resendTime}",
               ),
             ),
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.8,
               child: CustomButton(
                   text: "Verify",
-                  onPressed: () {
-                    verifyOtp(context, otpCode!);
+                  onPressed: () async {
+                    if (await checkInternetStatus()) {
+                      verifyOtp(context, otpCode!);
+                    } else {
+                      showToast("No internet to verify");
+                    }
                   }),
             ),
             const SizedBox(
@@ -130,22 +168,22 @@ class _OtpScreenState extends State<OtpScreen> {
             const SizedBox(
               height: 5,
             ),
-            IgnorePointer(
-              ignoring: Provider.of<FirebaseProvider>(context, listen: true)
-                  .codeSentButton,
-              child: InkWell(
-                onTap: () async {
-                  final ap =
-                      Provider.of<FirebaseProvider>(context, listen: false);
+            InkWell(
+              onTap: () async {
+                if (resendOtpButton) {
+                  final ap = Provider.of<AuthProvider>(context, listen: false);
 
                   await ap.resendCode(context);
-                },
-                child: Text(
-                  "Resend new code",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: myConstants.themeColor,
-                  ),
+                } else {
+                  showToast(
+                      "You cant sent new otp code until end of the resend time ");
+                }
+              },
+              child: Text(
+                "Resend new code",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: myConstants.themeColor,
                 ),
               ),
             ),
@@ -156,23 +194,25 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   void verifyOtp(BuildContext context, String userOtp) {
-    final ap = Provider.of<FirebaseProvider>(context, listen: false);
+    final ap = Provider.of<AuthProvider>(context, listen: false);
+    final dp = Provider.of<DatabaseProvider>(context, listen: false);
     ap.verifyOtp(
       userOtp: userOtp,
       verificationId: widget.verificationId,
-      onSuccess: () async {
-        await ap.checkExistingUser().then(
+      onSuccess: (String uid) async {
+        debugPrint("Uid $uid");
+        await dp.checkExistingUser(uid).then(
           (value) async {
             value
-                ? await ap
-                    .syncUserProfile()
-                    .whenComplete(() => Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => HomePage(),
-                          ),
-                          (route) => false,
-                        ))
+                ? await dp.syncUserProfile().whenComplete(
+                      () => Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => HomePage(),
+                        ),
+                        (route) => false,
+                      ),
+                    )
                 : Navigator.push(
                     context,
                     MaterialPageRoute(

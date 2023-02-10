@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:message_app/helper/firebase_provider.dart';
+import 'package:message_app/helper/auth_provider.dart';
+import 'package:message_app/helper/database_provider.dart';
 import 'package:message_app/pages/home_page.dart';
 import 'package:provider/provider.dart';
 import 'login_page.dart';
@@ -9,21 +10,21 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ap = Provider.of<FirebaseProvider>(context, listen: false);
+    final dp = Provider.of<DatabaseProvider>(context, listen: false);
+    final ap = Provider.of<AuthProvider>(context, listen: false);
 
     return StreamBuilder(
-      stream: ap.auth.authStateChanges(),
+      stream: ap.authStateChanges(),
       builder: ((context, snapshot) {
         if (snapshot.connectionState != ConnectionState.active) {
           return const Center(
             child: CircularProgressIndicator(),
           );
         } else if (snapshot.connectionState == ConnectionState.active) {
-          debugPrint(ap.isSignedIn.toString());
           WidgetsBinding.instance.addPostFrameCallback((_) async {
-            ap.checkSignInFromSP().whenComplete(() async {
-              ap.isSignedIn
-                  ? await ap
+            dp.checkSignInFromSP().whenComplete(() async {
+              dp.isSignedIn
+                  ? await dp
                       .getUserFromSP()
                       .whenComplete(() => Navigator.of(context).pushReplacement(
                             MaterialPageRoute(

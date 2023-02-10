@@ -1,9 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/utils.dart';
+import 'package:message_app/helper/contacts_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:message_app/constants/my_constants.dart';
-import '../helper/firebase_provider.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -14,21 +14,16 @@ class ContactsPage extends StatefulWidget {
 
 class _ContactsPageState extends State<ContactsPage> {
   @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    syncAllContacts();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final ap = Provider.of<FirebaseProvider>(context, listen: true);
+    final cp = Provider.of<ContactsProvider>(context, listen: true);
 
     return SafeArea(
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            showToast("Kişileriniz güncelleniyor");
+            showToast(
+              "Contacts updating",
+            );
             await syncAllContacts();
             setState(
               () {},
@@ -38,7 +33,7 @@ class _ContactsPageState extends State<ContactsPage> {
             Icons.refresh,
           ),
         ),
-        body: ap.myFriends.isEmpty
+        body: cp.myFriends.isEmpty
             ? const Center(
                 child: Text(
                   'You have not contacts in this app',
@@ -49,7 +44,7 @@ class _ContactsPageState extends State<ContactsPage> {
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
                   physics: ScrollPhysics(),
-                  itemCount: ap.myFriends.length,
+                  itemCount: cp.myFriends.length,
                   separatorBuilder: (context, index) => Divider(
                     color: myConstants.themeColor,
                   ),
@@ -67,8 +62,8 @@ class _ContactsPageState extends State<ContactsPage> {
                                   child: CachedNetworkImage(
                                     height: 50,
                                     fit: BoxFit.fitHeight,
-                                    imageUrl: ap.myFriends[index].profilePic,
-                                    cacheKey: ap.myFriends[index].profilePic,
+                                    imageUrl: cp.myFriends[index].profilePic,
+                                    cacheKey: cp.myFriends[index].profilePic,
                                     imageBuilder: (context, imageProvider) =>
                                         CircleAvatar(
                                       radius: 50,
@@ -98,13 +93,13 @@ class _ContactsPageState extends State<ContactsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    ap.myFriends[index].name,
+                                    cp.myFriends[index].name,
                                     style: TextStyle(
                                       fontSize: 20,
                                     ),
                                   ),
                                   Text(
-                                    ap.myFriends[index].bio,
+                                    cp.myFriends[index].bio,
                                     style: TextStyle(
                                       color: Colors.grey,
                                       fontSize: 16,
@@ -115,7 +110,7 @@ class _ContactsPageState extends State<ContactsPage> {
                               Expanded(
                                 child: Container(),
                               ),
-                              ap.myFriends[index].feel != ""
+                              cp.myFriends[index].feel != ""
                                   ? Container(
                                       margin: EdgeInsets.all(8.0),
                                       decoration: BoxDecoration(
@@ -125,7 +120,7 @@ class _ContactsPageState extends State<ContactsPage> {
                                       child: Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Text(
-                                          ap.myFriends[index].feel,
+                                          cp.myFriends[index].feel,
                                           style: TextStyle(
                                             fontSize: 20,
                                           ),
@@ -144,8 +139,12 @@ class _ContactsPageState extends State<ContactsPage> {
   }
 
   syncAllContacts() async {
-    final ap = Provider.of<FirebaseProvider>(context, listen: false);
-    await ap.syncAllContacts();
-    setState(() {});
+    bool result = await checkInternetStatus();
+    if (result == true) {
+      final cp = Provider.of<ContactsProvider>(context, listen: false);
+      await cp.syncAllContacts();
+    } else {
+      showToast('No internet :(');
+    }
   }
 }
