@@ -45,7 +45,7 @@ class AuthProvider extends ChangeNotifier {
           await signIn(credential);
         },
         verificationFailed: (FirebaseAuthException e) {
-          throw Exception(e.toString());
+          showToast("Verification failed.Wrong number");
         },
         codeSent: (String verificationId, int? resendToken) async {
           Navigator.of(context).push(
@@ -88,22 +88,19 @@ class AuthProvider extends ChangeNotifier {
         verificationId: verificationId,
         smsCode: userOtp,
       );
+      final result = (await _auth.signInWithCredential(_credential));
 
-      User? user = (await _auth.signInWithCredential(_credential)).user;
-
+      User? user = result.user;
       if (user != null) {
         String _uid = _auth.currentUser!.uid;
         onSuccess(_uid);
       }
+
       _isLoading = false;
       notifyListeners();
     } on FirebaseAuthException catch (e) {
       showToast(
         "Auth error",
-      );
-    } catch (e) {
-      showToast(
-        "Upload error",
       );
       _isLoading = false;
       notifyListeners();

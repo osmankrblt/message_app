@@ -1,15 +1,16 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:message_app/widgets/get_my_widgets.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/helper/contacts_provider.dart';
 import 'package:message_app/helper/database_provider.dart';
 import 'package:message_app/pages/contacts_page.dart';
-import 'package:message_app/pages/update_user_information_screen.dart';
+import 'package:message_app/widgets/input_field_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../constants/utils.dart';
 import '../helper/auth_provider.dart';
+import '../models/user_model.dart';
+import 'show_profile_photo.dart';
 import 'welcome_screen.dart';
 
 class HomePage extends StatefulWidget {
@@ -31,7 +32,7 @@ class _HomePageState extends State<HomePage> {
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
             await getPermissions();
-            await cp.getAllContactsFromSP();
+            await cp.getAllContactsFromLocal();
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => ContactsPage(),
@@ -53,6 +54,9 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     "HomePage",
+                  ),
+                  Text(
+                    dp.uid.toString(),
                   ),
                 ],
               ),
@@ -79,6 +83,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Drawer myDrawer(BuildContext context, AuthProvider ap, DatabaseProvider dp) {
+    UserModel _user =
+        Provider.of<DatabaseProvider>(context, listen: true).userModel;
     return Drawer(
       child: Center(
         child: Column(
@@ -96,53 +102,91 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 currentAccountPicture: InkWell(
-                  onTap: () {},
-                  child: dp.userModel.profilePic != ""
-                      ? CachedNetworkImage(
-                          fit: BoxFit.cover,
-                          imageUrl: dp.userModel.profilePic,
-                          cacheKey: dp.userModel.profilePic,
-                          imageBuilder: (context, imageProvider) =>
-                              CircleAvatar(
-                            backgroundImage: imageProvider,
-                          ),
-                          placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
-                        )
-                      : CircleAvatar(
-                          backgroundColor: myConstants.themeColor,
-                          child: const Icon(
-                            Icons.account_circle,
-                            color: Colors.white,
-                            size: 50,
-                          ),
-                        ),
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ProfilePhotoScreen(imgUrl: _user.profilePic),
+                      ),
+                    );
+                  },
+                  child: showImage(
+                    _user.profilePic,
+                    480,
+                  ),
                 ),
                 currentAccountPictureSize: const Size.square(
                   120,
                 ),
-                accountName: InkWell(
-                  onTap: () {},
-                  child: Text(
-                    dp.userModel.name,
-                    style: const TextStyle(
-                      fontSize: 20,
+                accountName: Row(
+                  children: [
+                    Flexible(
+                      child: InkWell(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            builder: ((context) => updateInputWidget(
+                                  "Name",
+                                  _user.name,
+                                  1,
+                                  25,
+                                  (value) async {
+                                    await dp
+                                        .updateName(name: value)
+                                        .whenComplete(
+                                            () => Navigator.pop(context));
+                                  },
+                                )),
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                          );
+                        },
+                        child: Text(
+                          _user.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                accountEmail: InkWell(
-                  onTap: () {},
-                  child: Text(
-                    dp.userModel.bio,
-                    style: const TextStyle(
-                      fontSize: 20,
+                accountEmail: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            builder: ((context) => updateInputWidget(
+                                  "Bio",
+                                  _user.bio,
+                                  2,
+                                  40,
+                                  (value) async {
+                                    await dp.updateBio(bio: value).whenComplete(
+                                        () => Navigator.pop(context));
+                                  },
+                                )),
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                          );
+                        },
+                        child: Text(
+                          _user.bio,
+                          maxLines: 2,
+                          style: const TextStyle(
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
             Expanded(
-              flex: 3,
+              flex: 4,
               child: Container(
                 width: double.infinity,
                 height: double.infinity,
@@ -158,30 +202,6 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UpdateUserInformationPage(
-                                userModel: dp.userModel,
-                              ),
-                            ),
-                          ).then((value) {
-                            showToast("Your profile updated");
-
-                            setState(() {});
-                          });
-                        },
-                        icon: Icon(
-                          Icons.edit_outlined,
-                          size: 35,
-                          color: myConstants.themeColor,
-                        ),
-                      ),
-                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Row(
@@ -327,5 +347,87 @@ class _HomePageState extends State<HomePage> {
         "User profile error",
       );
     }
+  }
+
+  Widget updateInputWidget(String updateName, String hintText, int maxLine,
+      int maxCharacter, Function onSuccess) {
+    final _formKey = GlobalKey<FormState>();
+
+    final controller = TextEditingController();
+
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Form(
+          key: _formKey,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Update your $updateName",
+                  style: TextStyle(
+                    fontSize: 30,
+                    color: myConstants.themeColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InputField(
+                        icon: Icons.new_releases,
+                        controller: controller,
+                        hintText: hintText,
+                        inputType: TextInputType.text,
+                        maxLine: maxLine,
+                        maxCharacter: maxCharacter,
+                        focus: true,
+                        onChanged: (value) {
+                          controller.text = value;
+
+                          setState(() {
+                            controller.selection = TextSelection.fromPosition(
+                              TextPosition(offset: controller.text.length),
+                            );
+                          });
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () async {
+                        if (await checkInternetStatus()) {
+                          if (_formKey.currentState!.validate()) {
+                            onSuccess(controller.text);
+                          }
+                          ;
+                        } else {
+                          showToast("No internet to sign in.Try again later.");
+                        }
+                      },
+                      icon: Icon(
+                        Icons.send,
+                        color: myConstants.themeColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

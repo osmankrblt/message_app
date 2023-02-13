@@ -1,12 +1,23 @@
 import 'dart:convert';
+import 'package:hive/hive.dart';
 
+part 'user_model.g.dart';
+
+@HiveType(typeId: 1)
 class UserModel {
+  @HiveField(0)
   String name;
+  @HiveField(1)
   String profilePic;
+  @HiveField(2)
   String bio;
+  @HiveField(3)
   String phoneNumber;
+  @HiveField(4)
   String uid;
+  @HiveField(5)
   String createdAt;
+  @HiveField(6)
   String feel;
 
   UserModel({

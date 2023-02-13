@@ -5,6 +5,7 @@ import 'package:message_app/widgets/custom_button.dart';
 import '../constants/utils.dart';
 import '../helper/auth_provider.dart';
 import 'package:message_app/constants/my_constants.dart';
+import 'package:libphonenumber/libphonenumber.dart';
 
 class PhoneScreen extends StatefulWidget {
   @override
@@ -14,7 +15,7 @@ class PhoneScreen extends StatefulWidget {
 class _PhoneScreenState extends State<PhoneScreen> {
   PhoneNumber _phoneNumber = PhoneNumber(
       isoCode: WidgetsBinding.instance.window.locale.countryCode.toString());
-
+  final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     final _isLoading =
@@ -63,9 +64,12 @@ class _PhoneScreenState extends State<PhoneScreen> {
                             text: "Login",
                             onPressed: () async {
                               if (await checkInternetStatus()) {
-                                verifyNumber(
-                                  _phoneNumber.phoneNumber,
-                                );
+                                if (_formKey.currentState!.validate()) {
+                                  _formKey.currentState!.save();
+                                  verifyNumber(
+                                    _phoneNumber,
+                                  );
+                                }
                               } else {
                                 showToast("No internet for verify number");
                               }
@@ -82,52 +86,72 @@ class _PhoneScreenState extends State<PhoneScreen> {
   }
 
   Widget getPhoneInput() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(),
-        borderRadius: BorderRadius.circular(
-          20,
+    return Form(
+      key: _formKey,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(),
+          borderRadius: BorderRadius.circular(
+            20,
+          ),
         ),
-      ),
-      child: InternationalPhoneNumberInput(
-        onInputChanged: (PhoneNumber number) {
-          if (number.phoneNumber!.length > 5) {
+        child: InternationalPhoneNumberInput(
+          textStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              showToast("Phone number length  musn't be empty");
+              return "";
+            } else if (value.length < 10) {
+              showToast("Phone number  length must be at least 10 characters ");
+              return "";
+            }
+            return null;
+          },
+          onInputChanged: (PhoneNumber number) {},
+          onSaved: (PhoneNumber number) {
             _phoneNumber = number;
-          }
-        },
-        selectorConfig: SelectorConfig(
-          showFlags: true,
-          leadingPadding: 25,
-          selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-        ),
-        ignoreBlank: false,
-        autoValidateMode: AutovalidateMode.disabled,
-        selectorTextStyle: TextStyle(
-          color: Colors.black,
-        ),
-        initialValue: _phoneNumber,
-        maxLength: 14,
-        scrollPadding: EdgeInsets.all(
-          15,
-        ),
-        formatInput: true,
-        keyboardType: TextInputType.phone,
-        cursorColor: myConstants.themeColor,
-        inputDecoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          hintText: "Phone number",
+          },
+          selectorConfig: SelectorConfig(
+            showFlags: true,
+            leadingPadding: 25,
+            selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+          ),
+          ignoreBlank: false,
+          autoValidateMode: AutovalidateMode.disabled,
+          selectorTextStyle: TextStyle(
+            color: Colors.black,
+          ),
+          initialValue: _phoneNumber,
+          maxLength: 14,
+          scrollPadding: EdgeInsets.all(
+            15,
+          ),
+          formatInput: true,
+          keyboardType: TextInputType.phone,
+          cursorColor: myConstants.themeColor,
+          inputDecoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            hintText: "Phone number",
+          ),
         ),
       ),
     );
   }
 
-  Future<void> verifyNumber(phoneNumber) async {
-    phoneNumber = phoneNumber;
+  Future<void> verifyNumber(PhoneNumber phoneNumber) async {
     final ap = Provider.of<AuthProvider>(context, listen: false);
 
     try {
-      ap.phoneVerify(context, phoneNumber);
+      bool? isValid = await PhoneNumberUtil.isValidPhoneNumber(
+          phoneNumber: phoneNumber.phoneNumber!, isoCode: phoneNumber.isoCode!);
+      if (isValid!) {
+        ap.phoneVerify(context, phoneNumber.phoneNumber!);
+      } else {
+        showToast("Phone number is not valid");
+      }
     } catch (e) {
       showToast(
         "Phone verify",

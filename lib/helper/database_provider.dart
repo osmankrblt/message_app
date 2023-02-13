@@ -1,10 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:message_app/helper/local_storage.dart';
 import '../constants/utils.dart';
 import '../models/user_model.dart';
 
@@ -12,7 +11,7 @@ class DatabaseProvider extends ChangeNotifier {
   late FirebaseAuth _auth;
   late FirebaseFirestore _firebaseFirestore;
   late FirebaseStorage _firebaseStorage;
-  late SharedPreferences _prefs;
+  late LocalStorage _localHelper;
 
   List<UserModel> _myFriends = [];
   List<UserModel> get myFriends => _myFriends;
@@ -30,19 +29,19 @@ class DatabaseProvider extends ChangeNotifier {
   UserModel get userModel => _userModel!;
 
   DatabaseProvider({
-    required SharedPreferences prefs,
+    required LocalStorage localHelper,
     required FirebaseFirestore firebaseFirestore,
     required FirebaseAuth firebaseAuth,
     required FirebaseStorage firebaseStorage,
   }) {
-    _prefs = prefs;
+    _localHelper = localHelper;
     _firebaseFirestore = firebaseFirestore;
     _firebaseStorage = firebaseStorage;
     _auth = firebaseAuth;
 
-    checkSignInFromSP();
+    checkSignInFromLocal();
   }
-  Future<String> saveImageToStorage(String ref, File file) async {
+  Future<String> uploadImageToCloud(String ref, File file) async {
     UploadTask uploadTask = _firebaseStorage.ref().child(ref).putFile(file);
 
     TaskSnapshot snapshot = await uploadTask;
@@ -67,34 +66,31 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-  Future checkSignInFromSP() async {
-    _prefs.reload();
-    _isSignedIn = _prefs.getBool("is_signedin") ?? false;
-
-    print("Giriş okundu... $_isSignedIn");
+  Future checkSignInFromLocal() async {
+    _isSignedIn = await _localHelper.checkSignInFromLocal();
     notifyListeners();
+    print("Giriş okundu... $_isSignedIn");
   }
 
-  Future setSignInToSP() async {
-    _prefs.setBool("is_signedin", true);
+  Future setSignInToLocal() async {
+    await _localHelper.setSignInToLocal();
 
     _isSignedIn = true;
     notifyListeners();
   }
 
-  Future setUserModelToSP() async {
-    _prefs.setString("user_model", jsonEncode(UserModel.toMap(_userModel!)));
-    _prefs.reload();
+  Future setUserModelToLocal() async {
+    _localHelper.saveUserToLocal(_userModel!);
+
     print("Model kaydedildi");
   }
 
-  Future getUserFromSP() async {
-    _prefs.reload();
+  Future getUserFromLocal() async {
+    _userModel = _localHelper.getUserFromLocal();
+    if (_userModel != null) {
+      _uid = _auth.currentUser!.uid;
+    }
 
-    String data = _prefs.getString("user_model") ?? "";
-    _userModel = UserModel.fromMap(jsonDecode(data));
-
-    _uid = _auth.currentUser!.uid;
     notifyListeners();
     print("Current user uid $_uid");
   }
@@ -110,8 +106,8 @@ class DatabaseProvider extends ChangeNotifier {
 
       _userModel = UserModel.fromMap(snapshot.data() as Map<String, dynamic>);
 
-      await setUserModelToSP();
-      await setSignInToSP();
+      await setUserModelToLocal();
+      await setSignInToLocal();
 
       _isLoading = false;
       notifyListeners();
@@ -131,8 +127,7 @@ class DatabaseProvider extends ChangeNotifier {
       _isSignedIn = false;
       notifyListeners();
 
-      _prefs.clear();
-      _prefs.reload();
+      _localHelper.clear();
     } on FirebaseException catch (e) {
       print("Hata " + e.message.toString());
       showToast(e.message.toString());
@@ -149,7 +144,7 @@ class DatabaseProvider extends ChangeNotifier {
       }
 
       await _firebaseFirestore.collection("users").doc(_uid).delete();
-      _prefs.clear();
+      _localHelper.clear();
       await _auth.signOut();
       _isSignedIn = false;
       notifyListeners();
@@ -159,6 +154,78 @@ class DatabaseProvider extends ChangeNotifier {
     } catch (e) {
       print("Hata " + e.toString());
       showToast(e.toString());
+    }
+  }
+
+  Future<void> updateProfilePhoto({
+    required File? profilePic,
+  }) async {
+    try {
+      if (profilePic != null) {
+        await uploadImageToCloud("profilePic/$_uid", profilePic).then((value) {
+          _userModel!.profilePic = value;
+        });
+      } else {
+        _userModel!.profilePic = "";
+      }
+
+      await _firebaseFirestore
+          .collection("users")
+          .doc(_uid)
+          .update({"profilePic": _userModel!.profilePic});
+
+      notifyListeners();
+      await setUserModelToLocal();
+    } on FirebaseAuthException catch (e) {
+      showToast(
+        "Update error - Profile Picture ",
+      );
+    } catch (e) {
+      showToast(
+        "Update error - Profile Picture ",
+      );
+    }
+  }
+
+  Future<void> updateBio({
+    required String bio,
+  }) async {
+    try {
+      _userModel!.bio = bio;
+      await _firebaseFirestore
+          .collection("users")
+          .doc(_uid)
+          .update({"bio": _userModel!.bio});
+      await setUserModelToLocal();
+    } on FirebaseAuthException catch (e) {
+      showToast(
+        "Update error - Bio ",
+      );
+    } catch (e) {
+      showToast(
+        "Update error - Bio ",
+      );
+    }
+  }
+
+  Future<void> updateName({
+    required String name,
+  }) async {
+    try {
+      _userModel!.name = name;
+      await _firebaseFirestore
+          .collection("users")
+          .doc(_uid)
+          .update({"name": _userModel!.name});
+      await setUserModelToLocal();
+    } on FirebaseAuthException catch (e) {
+      showToast(
+        "Update error - Name ",
+      );
+    } catch (e) {
+      showToast(
+        "Update error - Name ",
+      );
     }
   }
 
@@ -174,7 +241,7 @@ class DatabaseProvider extends ChangeNotifier {
 // upload image to firebase
 
       if (profilePic != null) {
-        await saveImageToStorage("profilePic/$_uid", profilePic).then((value) {
+        await uploadImageToCloud("profilePic/$_uid", profilePic).then((value) {
           userModel.profilePic = value;
         });
       }
@@ -190,7 +257,7 @@ class DatabaseProvider extends ChangeNotifier {
         notifyListeners();
       });
 
-      await setUserModelToSP();
+      await setUserModelToLocal();
     } on FirebaseAuthException catch (e) {
       showToast(
         "Auth error",
@@ -213,7 +280,7 @@ class DatabaseProvider extends ChangeNotifier {
           .doc(_uid)
           .update({"feel": feel});
 
-      await setUserModelToSP();
+      await setUserModelToLocal();
     } on FirebaseAuthException catch (e) {
       showToast(
         "Auth error",
@@ -237,7 +304,7 @@ class DatabaseProvider extends ChangeNotifier {
 // upload image to firebase
 
       if (profilePic != null) {
-        await saveImageToStorage("profilePic/$_uid", profilePic).then((value) {
+        await uploadImageToCloud("profilePic/$_uid", profilePic).then((value) {
           userModel.profilePic = value;
         });
       }
@@ -260,8 +327,8 @@ class DatabaseProvider extends ChangeNotifier {
         notifyListeners();
       });
 
-      await setUserModelToSP();
-      await setSignInToSP();
+      await setUserModelToLocal();
+      await setSignInToLocal();
     } on FirebaseAuthException catch (e) {
       showToast(
         "Auth error",

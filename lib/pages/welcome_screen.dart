@@ -22,10 +22,10 @@ class WelcomeScreen extends StatelessWidget {
           );
         } else if (snapshot.connectionState == ConnectionState.active) {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
-            dp.checkSignInFromSP().whenComplete(() async {
+            await dp.checkSignInFromLocal().whenComplete(() async {
               dp.isSignedIn
                   ? await dp
-                      .getUserFromSP()
+                      .getUserFromLocal()
                       .whenComplete(() => Navigator.of(context).pushReplacement(
                             MaterialPageRoute(
                               builder: (context) => HomePage(),

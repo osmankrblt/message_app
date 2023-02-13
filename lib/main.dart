@@ -3,15 +3,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:message_app/helper/auth_provider.dart';
 import 'package:message_app/helper/contacts_provider.dart';
 import 'package:message_app/helper/database_provider.dart';
+import 'package:message_app/helper/hive_storage.dart';
+import 'package:message_app/helper/local_storage.dart';
+import 'package:message_app/helper/shared_pref_storage.dart';
+import 'package:message_app/models/chat_model.dart';
 
 import 'constants/my_constants.dart';
 import 'firebase_options.dart';
+import 'models/user_model.dart';
 import 'pages/welcome_screen.dart';
 
 void main() async {
@@ -22,7 +28,10 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(MyApp(prefs: prefs));
+  //final LocalStorage hiveStorage = await HiveStorage().createHive();
+  final LocalStorage storageHelper = await SharedPrefStorage().createPref();
+  ;
+  runApp(MyApp(storageHelper: storageHelper));
 }
 
 class MyApp extends StatelessWidget {
@@ -30,12 +39,12 @@ class MyApp extends StatelessWidget {
   final FirebaseStorage firebaseStorage = FirebaseStorage.instance;
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
-  SharedPreferences prefs;
-
+  LocalStorage storageHelper;
   MyApp({
     Key? key,
-    required this.prefs,
+    required this.storageHelper,
   }) : super(key: key);
+
   // This widget is the root of your application.
 
   @override
@@ -49,16 +58,15 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => ContactsProvider(
-            firebaseFirestore: this.firebaseFirestore,
-            prefs: this.prefs,
-          ),
+              firebaseFirestore: this.firebaseFirestore,
+              localHelper: this.storageHelper),
         ),
         ChangeNotifierProvider(
           create: (_) => DatabaseProvider(
             firebaseAuth: this.firebaseAuth,
             firebaseFirestore: this.firebaseFirestore,
             firebaseStorage: this.firebaseStorage,
-            prefs: this.prefs,
+            localHelper: this.storageHelper,
           ),
         ),
       ],

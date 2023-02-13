@@ -6,6 +6,7 @@ import 'package:message_app/helper/database_provider.dart';
 import 'package:message_app/widgets/custom_button.dart';
 import 'package:provider/provider.dart';
 import '../models/user_model.dart';
+import '../widgets/input_field_widget.dart';
 import 'home_page.dart';
 
 class UserInformationPage extends StatefulWidget {
@@ -84,19 +85,43 @@ class _UserInformationPageState extends State<UserInformationPage> {
                       const SizedBox(
                         height: 25,
                       ),
-                      getInputField(
+                      InputField(
                         hintText: "Robert Downey Jr.",
                         controller: nameController,
                         icon: Icons.home,
                         inputType: TextInputType.name,
                         maxLine: 1,
+                        maxCharacter: 25,
+                        focus: false,
+                        onChanged: (value) {
+                          nameController.text = value;
+
+                          setState(() {
+                            nameController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(offset: nameController.text.length),
+                            );
+                          });
+                        },
                       ),
-                      getInputField(
+                      InputField(
                         hintText: "You know who I am",
                         controller: bioController,
                         icon: Icons.text_fields_outlined,
                         inputType: TextInputType.name,
                         maxLine: 2,
+                        maxCharacter: 40,
+                        focus: false,
+                        onChanged: (value) {
+                          bioController.text = value;
+
+                          setState(() {
+                            bioController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(offset: bioController.text.length),
+                            );
+                          });
+                        },
                       ),
                       SizedBox(
                         width: MediaQuery.of(context).size.width * 0.8,
@@ -120,84 +145,6 @@ class _UserInformationPageState extends State<UserInformationPage> {
     );
   }
 
-  Widget getInputField({
-    required IconData icon,
-    required TextEditingController controller,
-    required String hintText,
-    required TextInputType inputType,
-    required int maxLine,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15.0),
-      child: TextFormField(
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return "Value  musn't be empty";
-          } else if (value.length < 10) {
-            return "Value length must be at least 10 characters ";
-          }
-        },
-        controller: controller,
-        maxLines: maxLine,
-        keyboardType: inputType,
-        onChanged: (value) {
-          controller.text = value;
-
-          setState(() {
-            controller.selection = TextSelection.fromPosition(
-              TextPosition(offset: controller.text.length),
-            );
-          });
-        },
-        cursorColor: Colors.purple,
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.black,
-        ),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: myConstants.themeColor.shade50,
-          focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(
-              color: Colors.transparent,
-            ),
-            borderRadius: BorderRadius.circular(
-              10.0,
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: const BorderSide(
-              color: Colors.transparent,
-            ),
-            borderRadius: BorderRadius.circular(
-              10.0,
-            ),
-          ),
-          hintText: hintText,
-          hintStyle: const TextStyle(
-            fontSize: 16.0,
-            color: Colors.black38,
-          ),
-          prefixIcon: Container(
-            decoration: BoxDecoration(
-              color: myConstants.themeColor,
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            margin: EdgeInsets.all(
-              8.0,
-            ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: Colors.white,
-            ),
-          ),
-          alignLabelWithHint: true,
-        ),
-      ),
-    );
-  }
-
   void storeData() async {
     if (_formKey.currentState!.validate()) {
       final dp = Provider.of<DatabaseProvider>(context, listen: false);
@@ -216,7 +163,7 @@ class _UserInformationPageState extends State<UserInformationPage> {
         userModel: userModel,
         profilePic: image,
         onSuccess: () {
-          dp.setSignInToSP().then(
+          dp.setSignInToLocal().then(
                 (value) => Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
                       builder: (context) => HomePage(),
