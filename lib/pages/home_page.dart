@@ -110,7 +110,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     );
                   },
-                  child: showImage(
+                  child: showImageCircle(
                     _user.profilePic,
                     480,
                   ),

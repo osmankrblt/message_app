@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/constants/utils.dart';
 import 'package:provider/provider.dart';
 import '../helper/database_provider.dart';
+import '../widgets/get_my_widgets.dart';
 
 class ProfilePhotoScreen extends StatefulWidget {
   String imgUrl;
@@ -60,14 +60,7 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
             child: Container(
               color: Colors.black,
               child: image == null
-                  ? Hero(
-                      tag: widget.imgUrl,
-                      child: CachedNetworkImage(
-                        imageUrl: widget.imgUrl,
-                        cacheKey: widget.imgUrl,
-                        fit: BoxFit.contain,
-                      ),
-                    )
+                  ? showImageRectangle(widget.imgUrl, 480)
                   : Image.file(
                       image!,
                       fit: BoxFit.contain,
@@ -108,7 +101,11 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
                   child: Container(),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    deleteImage(context);
+
+                    Navigator.pop(context);
+                  },
                   icon: Icon(
                     Icons.delete,
                     color: Colors.white,
@@ -179,5 +176,15 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
     setState(() {});
 
     dp.updateProfilePhoto(profilePic: image);
+
+    Navigator.pop(context);
+  }
+
+  deleteImage(BuildContext context) async {
+    final dp = Provider.of<DatabaseProvider>(context, listen: false);
+
+    dp.updateProfilePhoto(profilePic: null);
+
+    Navigator.pop(context);
   }
 }

@@ -16,7 +16,29 @@ AppBar getAppbar(title) {
   );
 }
 
-Widget showImage(String imgUrl, int maxWidthForCache) {
+Widget showImageCircle(String imgUrl, int maxWidthForCache) {
+  return imgUrl != ""
+      ? CachedNetworkImage(
+          maxWidthDiskCache: maxWidthForCache,
+          fit: BoxFit.cover,
+          imageUrl: imgUrl,
+          cacheKey: imgUrl,
+          imageBuilder: (context, imageProvider) => CircleAvatar(
+            backgroundImage: imageProvider,
+          ),
+          placeholder: (context, url) => const CircularProgressIndicator(),
+        )
+      : CircleAvatar(
+          backgroundColor: myConstants.themeColor,
+          child: const Icon(
+            Icons.account_circle,
+            color: Colors.white,
+            size: 50,
+          ),
+        );
+}
+
+Widget showImageRectangle(String imgUrl, int maxWidthForCache) {
   return Hero(
     tag: imgUrl,
     child: imgUrl != ""
@@ -25,17 +47,18 @@ Widget showImage(String imgUrl, int maxWidthForCache) {
             fit: BoxFit.cover,
             imageUrl: imgUrl,
             cacheKey: imgUrl,
-            imageBuilder: (context, imageProvider) => CircleAvatar(
-              backgroundImage: imageProvider,
-            ),
-            placeholder: (context, url) => const CircularProgressIndicator(),
           )
-        : CircleAvatar(
-            backgroundColor: myConstants.themeColor,
+        : Container(
+            width: 480,
+            height: 250,
+            decoration: BoxDecoration(
+              color: Colors.purple,
+              shape: BoxShape.rectangle,
+            ),
             child: const Icon(
               Icons.account_circle,
               color: Colors.white,
-              size: 50,
+              size: 100,
             ),
           ),
   );

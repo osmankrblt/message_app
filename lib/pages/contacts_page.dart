@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/utils.dart';
 import 'package:message_app/helper/contacts_provider.dart';
+import 'package:message_app/pages/quick_user_info.dart';
 import 'package:provider/provider.dart';
 import 'package:message_app/constants/my_constants.dart';
 import '../models/user_model.dart';
 import '../widgets/get_my_widgets.dart';
-import 'show_image_page.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -21,6 +21,18 @@ class _ContactsPageState extends State<ContactsPage> {
 
     return SafeArea(
       child: Scaffold(
+        appBar: AppBar(
+          title: Text("Friends"),
+          leading: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: Icon(
+                Icons.arrow_back,
+                color: myConstants.themeColor,
+                size: 30,
+              )),
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
             showToast(
@@ -39,14 +51,11 @@ class _ContactsPageState extends State<ContactsPage> {
                 ),
               )
             : SingleChildScrollView(
-                child: ListView.separated(
+                child: ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
                   physics: ScrollPhysics(),
                   itemCount: cp.myFriends.length,
-                  separatorBuilder: (context, index) => Divider(
-                    color: myConstants.themeColor,
-                  ),
                   itemBuilder: ((context, index) => userListTile(
                         cp.myFriends[index],
                       )),
@@ -60,6 +69,7 @@ class _ContactsPageState extends State<ContactsPage> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Card(
+        elevation: 5,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
@@ -68,16 +78,18 @@ class _ContactsPageState extends State<ContactsPage> {
               width: 80,
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: InkWell(
-                  onTap: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ImageScreen(
-                            userName: user.name, imgUrl: user.profilePic),
-                      ),
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      isScrollControlled: true,
+                      isDismissible: false,
+                      enableDrag: true,
+                      context: context,
+                      builder: (context) => QuickInfo(user: user),
+                      backgroundColor: Colors.transparent,
                     );
                   },
-                  child: showImage(
+                  child: showImageCircle(
                     user.profilePic,
                     140,
                   ),
@@ -96,11 +108,22 @@ class _ContactsPageState extends State<ContactsPage> {
                     fontSize: 20,
                   ),
                 ),
-                Text(
-                  user.bio,
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
+                SizedBox(
+                  width: 230.0,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          user.bio,
+                          maxLines: 2,
+                          // softWrap: false,
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

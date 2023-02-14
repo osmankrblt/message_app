@@ -21,24 +21,35 @@ class WelcomeScreen extends StatelessWidget {
             child: CircularProgressIndicator(),
           );
         } else if (snapshot.connectionState == ConnectionState.active) {
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            await dp.checkSignInFromLocal().whenComplete(() async {
-              dp.isSignedIn
-                  ? await dp
-                      .getUserFromLocal()
-                      .whenComplete(() => Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (context) => HomePage(),
-                            ),
-                          ))
-                  : Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => LoginPage(),
-                      ),
-                    );
-            });
-          });
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) async {
+              await dp.checkSignInFromLocal().whenComplete(
+                () async {
+                  dp.isSignedIn
+                      ? await dp.getUserFromLocal().whenComplete(() async {
+                          await dp.checkExistingUser(dp.uid)
+                              ? Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (context) => HomePage(),
+                                  ),
+                                )
+                              : Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LoginPage(),
+                                  ),
+                                );
+                        })
+                      : Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LoginPage(),
+                          ),
+                        );
+                },
+              );
+            },
+          );
 
           return Container();
         } else {

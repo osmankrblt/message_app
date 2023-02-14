@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/my_constants.dart';
 
-class InputField extends StatelessWidget {
+class InputField extends StatefulWidget {
   late IconData icon;
   late TextEditingController controller;
   late String hintText;
@@ -23,27 +23,33 @@ class InputField extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<InputField> createState() => _InputFieldState();
+}
+
+class _InputFieldState extends State<InputField> {
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15.0),
       child: TextFormField(
-        autofocus: focus,
+        autofocus: widget.focus,
         validator: (value) {
           if (value == null || value.isEmpty) {
             return "Value  musn't be empty";
           } else if (value.length < 10) {
             return "Value length must be at least 10 characters ";
-          } else if (value.length > maxCharacter) {
-            return "Value length mustn't be at more $maxCharacter characters ";
+          } else if (value.length > widget.maxCharacter) {
+            return "Value length mustn't be at more ${widget.maxCharacter} characters ";
           }
 
           return null;
         },
-        controller: controller,
-        maxLines: maxLine,
-        keyboardType: inputType,
+        controller: widget.controller,
+        maxLines: widget.maxLine,
+        keyboardType: widget.inputType,
         onChanged: (value) {
-          onChanged(value);
+          widget.onChanged(value);
+          setState(() {});
         },
         cursorColor: Colors.purple,
         style: TextStyle(
@@ -52,6 +58,8 @@ class InputField extends StatelessWidget {
         ),
         decoration: InputDecoration(
           filled: true,
+          counterText:
+              '${widget.controller.text.length.toString()}/${widget.maxCharacter}',
           fillColor: myConstants.themeColor.shade50,
           focusedBorder: OutlineInputBorder(
             borderSide: const BorderSide(
@@ -69,7 +77,7 @@ class InputField extends StatelessWidget {
               10.0,
             ),
           ),
-          hintText: hintText,
+          hintText: widget.hintText,
           hintStyle: const TextStyle(
             fontSize: 16.0,
             color: Colors.black38,
@@ -83,7 +91,7 @@ class InputField extends StatelessWidget {
               8.0,
             ),
             child: Icon(
-              icon,
+              widget.icon,
               size: 20,
               color: Colors.white,
             ),
