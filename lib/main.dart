@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,8 +22,8 @@ import 'models/user_model.dart';
 import 'pages/welcome_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  //FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -30,7 +31,7 @@ void main() async {
 
   //final LocalStorage hiveStorage = await HiveStorage().createHive();
   final LocalStorage storageHelper = await SharedPrefStorage().createPref();
-  ;
+
   runApp(MyApp(storageHelper: storageHelper));
 }
 
@@ -40,6 +41,7 @@ class MyApp extends StatelessWidget {
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
   LocalStorage storageHelper;
+
   MyApp({
     Key? key,
     required this.storageHelper,

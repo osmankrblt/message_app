@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:message_app/widgets/get_my_widgets.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/helper/contacts_provider.dart';
@@ -19,6 +20,26 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      bool result = await checkInternetStatus();
+      if (result == true) {
+        final cp = Provider.of<ContactsProvider>(context, listen: false);
+        // final dp = Provider.of<DatabaseProvider>(context, listen: false);
+
+        // await dp.syncUserProfile();
+        await cp.syncAllContacts();
+      } else {
+        showToast('No internet :(');
+      }
+    });
+    FlutterNativeSplash.remove();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cp = Provider.of<ContactsProvider>(context, listen: false);

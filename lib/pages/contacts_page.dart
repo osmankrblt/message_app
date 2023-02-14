@@ -97,7 +97,7 @@ class _ContactsPageState extends State<ContactsPage> {
               ),
             ),
             SizedBox(
-              width: 20,
+              width: 10,
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,7 +109,7 @@ class _ContactsPageState extends State<ContactsPage> {
                   ),
                 ),
                 SizedBox(
-                  width: 230.0,
+                  width: MediaQuery.of(context).size.width * 0.55,
                   child: Row(
                     children: [
                       Expanded(
@@ -119,7 +119,7 @@ class _ContactsPageState extends State<ContactsPage> {
                           // softWrap: false,
                           style: TextStyle(
                             color: Colors.grey,
-                            fontSize: 16,
+                            fontSize: 14,
                           ),
                         ),
                       ),
