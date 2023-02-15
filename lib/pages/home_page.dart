@@ -22,8 +22,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-    //   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+    WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+    // FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       await getPermissions();
 
@@ -35,10 +35,10 @@ class _HomePageState extends State<HomePage> {
         // await dp.syncUserProfile();
         await cp.syncAllContacts();
       } else {
-        showToast('No internet :(');
+        showToast("No internet :(");
       }
     });
-    //  FlutterNativeSplash.remove();
+    // FlutterNativeSplash.remove();
   }
 
   @override
