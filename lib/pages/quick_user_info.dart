@@ -35,7 +35,10 @@ class QuickInfo extends StatelessWidget {
                       )
                     : showToast("No image");
               },
-              child: showImageRectangle(user.profilePic, 480),
+              child: showImageRectangle(
+                user.profilePic,
+                360,
+              ),
             ),
           ),
           Divider(color: Colors.transparent),

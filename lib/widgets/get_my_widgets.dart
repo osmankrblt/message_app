@@ -44,7 +44,7 @@ Widget showImageRectangle(String imgUrl, int maxWidthForCache) {
     child: imgUrl != ""
         ? CachedNetworkImage(
             maxWidthDiskCache: maxWidthForCache,
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             imageUrl: imgUrl,
             cacheKey: imgUrl,
           )

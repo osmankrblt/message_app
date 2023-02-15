@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:message_app/widgets/get_my_widgets.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/helper/contacts_provider.dart';
@@ -23,9 +22,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+    // WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+    //   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      await getPermissions();
+
       bool result = await checkInternetStatus();
       if (result == true) {
         final cp = Provider.of<ContactsProvider>(context, listen: false);
@@ -37,7 +38,7 @@ class _HomePageState extends State<HomePage> {
         showToast('No internet :(');
       }
     });
-    FlutterNativeSplash.remove();
+    //  FlutterNativeSplash.remove();
   }
 
   @override
@@ -52,7 +53,6 @@ class _HomePageState extends State<HomePage> {
         appBar: getAppbar("Chatobur"),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            await getPermissions();
             await cp.getAllContactsFromLocal();
             Navigator.of(context).push(
               MaterialPageRoute(
