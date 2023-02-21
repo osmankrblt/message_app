@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class myConstants {
   myConstants._();
-  static var themeColor = Colors.purple;
+  static var themeColor = Colors.blue;
 
   static double textFontSize = 25;
   static double customButtonHeight = 40;

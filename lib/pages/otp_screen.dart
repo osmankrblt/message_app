@@ -58,9 +58,9 @@ class _OtpScreenState extends State<OtpScreen> {
         resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: _isLoading
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(
-                    color: Colors.purple,
+                    color: myConstants.themeColor,
                   ),
                 )
               : Column(

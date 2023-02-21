@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:message_app/helper/chat_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:message_app/helper/auth_provider.dart';
@@ -53,8 +54,16 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => ContactsProvider(
-              firebaseFirestore: this.firebaseFirestore,
-              localHelper: this.storageHelper),
+            firebaseFirestore: this.firebaseFirestore,
+            localHelper: this.storageHelper,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ChatProvider(
+            firebaseFirestore: this.firebaseFirestore,
+            firebaseStorage: this.firebaseStorage,
+            localHelper: this.storageHelper,
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) => DatabaseProvider(

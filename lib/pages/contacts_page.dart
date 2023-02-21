@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:message_app/constants/utils.dart';
 import 'package:message_app/helper/contacts_provider.dart';
+import 'package:message_app/helper/database_provider.dart';
+import 'package:message_app/pages/chat_screen.dart';
 import 'package:message_app/pages/quick_user_info.dart';
 import 'package:provider/provider.dart';
 import 'package:message_app/constants/my_constants.dart';
@@ -24,25 +26,30 @@ class _ContactsPageState extends State<ContactsPage> {
         appBar: AppBar(
           title: Text("Friends"),
           leading: IconButton(
-              onPressed: () {
-                Navigator.pop(context);
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: Icon(
+              Icons.arrow_back,
+              color: myConstants.themeColor,
+              size: 30,
+            ),
+          ),
+          actions: [
+            IconButton(
+              onPressed: () async {
+                showToast(
+                  "Contacts updating",
+                );
+                await syncAllContacts();
               },
               icon: Icon(
-                Icons.arrow_back,
+                Icons.refresh,
                 color: myConstants.themeColor,
                 size: 30,
-              )),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            showToast(
-              "Contacts updating",
-            );
-            await syncAllContacts();
-          },
-          child: const Icon(
-            Icons.refresh,
-          ),
+              ),
+            )
+          ],
         ),
         body: cp.myFriends.isEmpty
             ? const Center(
@@ -99,34 +106,48 @@ class _ContactsPageState extends State<ContactsPage> {
             SizedBox(
               width: 10,
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.name,
-                  style: TextStyle(
-                    fontSize: 20,
+            InkWell(
+              onTap: () {
+                final String myUid =
+                    Provider.of<DatabaseProvider>(context, listen: false).uid;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      currentUserId: myUid,
+                      peerUser: user,
+                    ),
                   ),
-                ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.55,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          user.bio,
-                          maxLines: 2,
-                          // softWrap: false,
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.name,
+                    style: TextStyle(
+                      fontSize: 20,
+                    ),
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.55,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user.bio,
+                            maxLines: 2,
+                            // softWrap: false,
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             Expanded(
               child: Container(),
@@ -148,7 +169,7 @@ class _ContactsPageState extends State<ContactsPage> {
                       ),
                     ),
                   )
-                : Container(),
+                : Container()
           ],
         ),
       ),

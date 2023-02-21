@@ -21,6 +21,31 @@ class ContactsProvider extends ChangeNotifier {
   }
 
 //Friends funcs
+
+  getUserInfo(String peerId) async {
+    UserModel? peer = null;
+
+    QuerySnapshot snapshot = await _firebaseFirestore
+        .collection("users")
+        .where(
+          "uid",
+          isEqualTo: peerId,
+        )
+        .get(
+          GetOptions(
+            source: Source.server,
+          ),
+        );
+
+    if (snapshot.docs.isNotEmpty) {
+      Map<String, dynamic> _user =
+          snapshot.docs.first.data() as Map<String, dynamic>;
+      peer = UserModel.fromMap(_user);
+    }
+
+    return peer;
+  }
+
   _contactsTakeAllNumbers() async {
     List<Contact> contacts =
         await ContactsService.getContacts(withThumbnails: false);

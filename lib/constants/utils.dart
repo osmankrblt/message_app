@@ -61,3 +61,11 @@ Future<File?> pickImage() async {
   }
   return image;
 }
+
+getGroupChatId({required currentId, required peerId}) {
+  if (currentId.hashCode <= peerId.hashCode) {
+    return '$currentId-$peerId';
+  } else {
+    return '$peerId-$currentId';
+  }
+}

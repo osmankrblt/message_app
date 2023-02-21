@@ -51,7 +51,7 @@ class _InputFieldState extends State<InputField> {
           widget.onChanged(value);
           setState(() {});
         },
-        cursorColor: Colors.purple,
+        cursorColor: myConstants.themeColor,
         style: TextStyle(
           fontSize: 16,
           color: Colors.black,

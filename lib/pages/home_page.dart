@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:message_app/widgets/get_my_widgets.dart';
 import 'package:message_app/constants/my_constants.dart';
@@ -10,6 +11,8 @@ import 'package:provider/provider.dart';
 import '../constants/utils.dart';
 import '../helper/auth_provider.dart';
 import '../models/user_model.dart';
+import 'chat_screen.dart';
+import 'quick_user_info.dart';
 import 'show_profile_photo.dart';
 import 'welcome_screen.dart';
 
@@ -19,9 +22,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late AuthProvider authProvider;
+  late String currentUserId;
+  final ScrollController listScrollController = ScrollController();
+
+  int _limit = 20;
+  int _limitIncrement = 20;
+
+  List listMessageContacts = [];
+
   @override
   void initState() {
     super.initState();
+
+    authProvider = context.read<AuthProvider>();
+    if (authProvider.getUserFirebaseId()?.isNotEmpty == true) {
+      currentUserId = authProvider.getUserFirebaseId()!;
+    }
+    listScrollController.addListener(scrollListener);
     WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
     // FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
@@ -39,6 +57,16 @@ class _HomePageState extends State<HomePage> {
       }
     });
     // FlutterNativeSplash.remove();
+  }
+
+  void scrollListener() {
+    if (listScrollController.offset >=
+            listScrollController.position.maxScrollExtent &&
+        !listScrollController.position.outOfRange) {
+      setState(() {
+        _limit += _limitIncrement;
+      });
+    }
   }
 
   @override
@@ -64,25 +92,157 @@ class _HomePageState extends State<HomePage> {
             Icons.people_outline,
           ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Center(
-            child: Container(
-              color: Colors.purple,
+        body: Stack(
+          children: [
+            Container(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    "HomePage",
+                  Flexible(
+                    child: StreamBuilder<DocumentSnapshot>(
+                      stream: dp.getMyMessageList(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  myConstants.themeColor),
+                            ),
+                          );
+                        } else if (snapshot.hasError) {
+                          return Center(
+                            child: Text("Error"),
+                          );
+                        } else {
+                          listMessageContacts = (snapshot.data!.data()
+                              as Map<String, dynamic>)["messageUids"];
+
+                          return listMessageContacts.length != 0
+                              ? ListView.builder(
+                                  padding: EdgeInsets.all(10.0),
+                                  itemBuilder: (context, index) {
+                                    //   UserModel? user =
+                                    //     cp.getUserInfo(listMessageContacts[index]);
+                                    return userListTile(
+                                      UserModel(
+                                        name: "test",
+                                        profilePic: "",
+                                        bio: "test",
+                                        phoneNumber: "test",
+                                        uid: "test",
+                                        createdAt: "test",
+                                        feel: "test",
+                                      ),
+                                    );
+                                  },
+                                  itemCount: listMessageContacts.length,
+                                  reverse: false,
+                                  controller: listScrollController,
+                                )
+                              : Center(
+                                  child: Text(
+                                    "You never texted",
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: myConstants.themeColor,
+                                    ),
+                                  ),
+                                );
+                        }
+                      },
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget userListTile(UserModel user) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Card(
+        elevation: 5,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 80,
+              width: 80,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      isScrollControlled: true,
+                      isDismissible: false,
+                      enableDrag: true,
+                      context: context,
+                      builder: (context) => QuickInfo(user: user),
+                      backgroundColor: Colors.transparent,
+                    );
+                  },
+                  child: showImageCircle(
+                    user.profilePic,
+                    140,
                   ),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            InkWell(
+              onTap: () {
+                final String myUid =
+                    Provider.of<DatabaseProvider>(context, listen: false).uid;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      currentUserId: myUid,
+                      peerUser: user,
+                    ),
+                  ),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    dp.uid.toString(),
+                    user.name,
+                    style: TextStyle(
+                      fontSize: 20,
+                    ),
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.55,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user.bio,
+                            maxLines: 2,
+                            // softWrap: false,
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
+            Expanded(
+              child: Container(),
+            ),
+          ],
         ),
       ),
     );

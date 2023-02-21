@@ -41,6 +41,7 @@ class DatabaseProvider extends ChangeNotifier {
 
     checkSignInFromLocal();
   }
+
   Future<String> uploadImageToCloud(String ref, File file) async {
     UploadTask uploadTask = _firebaseStorage.ref().child(ref).putFile(file);
 
@@ -142,6 +143,7 @@ class DatabaseProvider extends ChangeNotifier {
       }
 
       await _firebaseFirestore.collection("users").doc(_uid).delete();
+      await _firebaseFirestore.collection("message_lists").doc(_uid).delete();
       _localHelper.clear();
       await _auth.signOut();
       _isSignedIn = false;
@@ -309,7 +311,7 @@ class DatabaseProvider extends ChangeNotifier {
 
       userModel.createdAt = DateTime.now().millisecondsSinceEpoch.toString();
       userModel.phoneNumber = _auth.currentUser!.phoneNumber!;
-      userModel.uid = _auth.currentUser!.phoneNumber!;
+      userModel.uid = _auth.currentUser!.uid;
 
       _userModel = userModel;
 
@@ -319,9 +321,13 @@ class DatabaseProvider extends ChangeNotifier {
           .set(
             UserModel.toMap(userModel),
           )
-          .then((value) {
+          .then((value) async {
+        await _firebaseFirestore.collection("message_lists").doc(_uid).set(
+          {"messageUids": []},
+        );
         onSuccess();
         _isLoading = false;
+
         notifyListeners();
       });
 
@@ -340,5 +346,9 @@ class DatabaseProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  } // chat functions
+
+  Stream<DocumentSnapshot> getMyMessageList() {
+    return _firebaseFirestore.collection("message_lists").doc(_uid).snapshots();
   }
 }

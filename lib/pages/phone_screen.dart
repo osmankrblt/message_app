@@ -23,9 +23,9 @@ class _PhoneScreenState extends State<PhoneScreen> {
     return Scaffold(
       body: SafeArea(
         child: _isLoading
-            ? const Center(
+            ? Center(
                 child: CircularProgressIndicator(
-                  color: Colors.purple,
+                  color: myConstants.themeColor,
                 ),
               )
             : Column(

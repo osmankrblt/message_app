@@ -27,6 +27,10 @@ class AuthProvider extends ChangeNotifier {
     return _auth.authStateChanges();
   }
 
+  getUserFirebaseId() {
+    return _auth.currentUser!.uid;
+  }
+
   Future<void> resendCode(BuildContext context) async {
     showToast(
       "Otp code will sent...",
