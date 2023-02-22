@@ -4,7 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:message_app/helper/local_storage.dart';
-
+import 'package:path/path.dart';
 import '../constants/utils.dart';
 import '../models/chat_model.dart';
 
@@ -24,7 +24,7 @@ class ChatProvider extends ChangeNotifier {
     _firebaseStorage = firebaseStorage;
   }
 
-  Future<String> uploadImageToCloud(String ref, File file) async {
+  Future<String> uploadFileToCloud(String ref, File file) async {
     UploadTask uploadTask = _firebaseStorage.ref().child(ref).putFile(file);
 
     TaskSnapshot snapshot = await uploadTask;
@@ -34,8 +34,8 @@ class ChatProvider extends ChangeNotifier {
     return downloadUrl;
   }
 
-  void sendChatMessage(String content, File? image, String groupChatId,
-      String currentUserId, String peerId) async {
+  void sendChatMessage(String content, File? image, File? file,
+      String groupChatId, String currentUserId, String peerId) async {
     try {
       String timeNow = DateTime.now().millisecondsSinceEpoch.toString();
 
@@ -61,9 +61,19 @@ class ChatProvider extends ChangeNotifier {
           .doc(timeNow);
 
       if (image != null) {
-        await uploadImageToCloud(
+        await uploadFileToCloud(
           "images/$currentUserId/$peerId-$timeNow}",
           image,
+        ).then(
+          (value) {
+            message.image = value;
+          },
+        );
+      }
+      if (file != null) {
+        await uploadFileToCloud(
+          "files/$currentUserId/$peerId-${basename(file.path)}-$timeNow}",
+          file,
         ).then(
           (value) {
             message.image = value;

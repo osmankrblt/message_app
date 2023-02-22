@@ -38,7 +38,7 @@ Widget showImageCircle(String imgUrl, int maxWidthForCache) {
           child: const Icon(
             Icons.account_circle,
             color: Colors.white,
-            size: 50,
+            size: 25,
           ),
         );
 }

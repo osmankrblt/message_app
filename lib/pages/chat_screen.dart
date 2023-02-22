@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/helper/chat_provider.dart';
 import 'package:message_app/widgets/get_my_widgets.dart';
@@ -39,6 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
   int _limitIncrement = 20;
   late int sWidth;
   File? imageFile = null;
+  File? uploadFile = null;
 
   final TextEditingController textEditingController = TextEditingController();
   final ScrollController listScrollController = ScrollController();
@@ -51,7 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     // chatProvider = context.read<ChatProvider>();
 
-    // listScrollController.addListener(_scrollListener);
+    listScrollController.addListener(_scrollListener);
     // readLocal();
   }
 
@@ -64,6 +66,8 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _limit += _limitIncrement;
       });
+
+      print("Limit $_limit");
     }
   }
 
@@ -143,8 +147,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (content.trim() != '' || imageFile != null) {
       textEditingController.clear();
-      chatProvider.sendChatMessage(content, image, widget.groupChatId,
-          widget.currentUserId, widget.peerUser.uid);
+      chatProvider.sendChatMessage(content, image, uploadFile,
+          widget.groupChatId, widget.currentUserId, widget.peerUser.uid);
       listScrollController.animateTo(0.0,
           duration: Duration(milliseconds: 300), curve: Curves.easeOut);
 
@@ -158,11 +162,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   buildListMessage() {
     final messages = Provider.of<ChatProvider>(context, listen: true);
-
+    String date = "";
     return Flexible(
       child: widget.groupChatId.isNotEmpty
           ? StreamBuilder<QuerySnapshot>(
-              stream: messages.getChatMessage(widget.groupChatId, 10),
+              stream: messages.getChatMessage(widget.groupChatId, _limit),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return Center(
@@ -178,7 +182,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 } else {
                   listMessage = snapshot.data!.docs;
 
-                  String date = "";
                   return ListView.separated(
                     padding: EdgeInsets.all(10.0),
                     separatorBuilder: (context, index) {
@@ -187,16 +190,18 @@ class _ChatScreenState extends State<ChatScreen> {
                           listMessage[index],
                         ).timestamp),
                       );
-                      date != "${tsdate.day.toString()}/${tsdate.month.toString()}/${tsdate.year.toString()}"
-                          ? "${tsdate.day.toString()}/${tsdate.month.toString()}/${tsdate.year.toString()}"
-                          : "";
-                      return date != ""
+
+                      print(date);
+                      print(DateFormat("d/MM/y").format(tsdate));
+
+                      print(date != DateFormat("d/MM/y").format(tsdate));
+                      return date != DateFormat("d/MM/y").format(tsdate)
                           ? Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Center(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade300,
+                                    color: myConstants.themeColor.shade100,
                                     borderRadius: BorderRadius.circular(5),
                                   ),
                                   child: Padding(
@@ -210,17 +215,26 @@ class _ChatScreenState extends State<ChatScreen> {
                             )
                           : Container();
                     },
-                    itemBuilder: (context, index) => Padding(
-                      padding: EdgeInsets.only(
-                        bottom: 10,
-                      ),
-                      child: buildItem(
-                        index,
-                        ChatModel.fromDoc(
-                          listMessage[index],
+                    itemBuilder: (context, index) {
+                      ChatModel message = ChatModel.fromDoc(
+                        listMessage[index],
+                      );
+
+                      DateTime tsdate = DateTime.fromMillisecondsSinceEpoch(
+                        int.parse(message.timestamp),
+                      );
+                      date = DateFormat("d/MM/y").format(tsdate);
+
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: 10,
                         ),
-                      ),
-                    ),
+                        child: buildItem(
+                          index,
+                          message,
+                        ),
+                      );
+                    },
                     itemCount: listMessage.length,
                     reverse: true,
                     controller: listScrollController,

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -60,6 +61,24 @@ Future<File?> pickImage() async {
     );
   }
   return image;
+}
+
+Future<File?> pickFile() async {
+  File? file;
+  try {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      file = File(result.files.single.path!);
+    } else {
+      file = null;
+    }
+  } catch (e) {
+    showToast(
+      "File upload error",
+    );
+  }
+  return file;
 }
 
 getGroupChatId({required currentId, required peerId}) {
