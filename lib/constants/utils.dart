@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:message_app/constants/my_constants.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 checkInternetStatus() async {
   final connectivityResult = await (Connectivity().checkConnectivity());
@@ -87,4 +90,69 @@ getGroupChatId({required currentId, required peerId}) {
   } else {
     return '$peerId-$currentId';
   }
+}
+
+getDateToString(String messageDate) {
+  DateTime tsdate = DateTime.now();
+
+  if (messageDate == DateFormat("d/MM/y").format(tsdate)) {
+    return "Today";
+  } else if (DateFormat("d/MM/y").format(tsdate.subtract(Duration(days: 1))) ==
+      messageDate) {
+    return "Yesterday";
+  } else {
+    return messageDate;
+  }
+}
+
+isDigits(String text) {
+  try {
+    double digits = double.parse(text);
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+richText(
+  String text,
+  bool isPeer,
+  TextStyle textStyle,
+) {
+  return SelectableLinkify(
+    onOpen: (link) async {
+      late Uri task;
+      if (link.url.contains("@")) {
+        String content = Uri.encodeComponent(link.url);
+
+        task = Uri.parse("mailto:$content");
+      } else if (isDigits(link.url)) {
+        String content = Uri.encodeComponent(link.url);
+
+        task = Uri.parse("tel:$content");
+      } else {
+        String content = Uri.encodeComponent(link.url);
+
+        task = Uri.parse("https:$content");
+      }
+
+      if (await canLaunchUrl(task)) {
+        await launchUrl(task);
+      } else {
+        throw 'Could not launch $link';
+      }
+    },
+    text: text,
+    options: LinkifyOptions(
+      looseUrl: true,
+    ),
+    maxLines: null,
+    // softWrap: true,
+    style: textStyle,
+    linkStyle: TextStyle(
+      color: isPeer ? myConstants.themeColor : Colors.white,
+      fontSize: 15,
+    ),
+  );
 }

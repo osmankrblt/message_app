@@ -2,8 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:message_app/constants/my_constants.dart';
+import 'package:message_app/constants/utils.dart';
 import 'package:message_app/models/chat_model.dart';
-
+import 'package:message_app/widgets/get_my_widgets.dart';
 import '../pages/show_image_page.dart';
 
 class message extends StatelessWidget {
@@ -28,75 +29,87 @@ class message extends StatelessWidget {
       mainAxisAlignment:
           isPeer ? MainAxisAlignment.start : MainAxisAlignment.end,
       children: [
-        Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.6,
-          ),
-          child: Column(
-            crossAxisAlignment:
-                isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-            children: [
-              buildImage(chatModel.image, 250, () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => ImageScreen(
-                      userName: chatModel.idFrom,
-                      imgUrl: chatModel.image,
-                    ),
-                  ),
-                );
-              }),
-              Material(
-                elevation: 10,
-                color: Colors.transparent,
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: isPeer
-                            ? Colors.black.withOpacity(0.4)
-                            : Colors.black.withOpacity(0.4),
-
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: Offset(5, 5), // changes position of shadow
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.6,
+            ),
+            child: Column(
+              crossAxisAlignment:
+                  isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+              children: [
+                buildImage(chatModel.image, 250, () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ImageScreen(
+                        userName: chatModel.idFrom,
+                        imgUrl: chatModel.image,
                       ),
-                    ],
-                    borderRadius: BorderRadius.circular(
-                      10,
                     ),
-                    color:
-                        isPeer ? Colors.white : myConstants.themeColor.shade400,
+                  );
+                }),
+                Material(
+                  elevation: 10,
+                  color: Colors.transparent,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: isPeer
+                              ? Colors.black.withOpacity(0.4)
+                              : Colors.black.withOpacity(0.4),
+
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: Offset(5, 5), // changes position of shadow
+                        ),
+                      ],
+                      borderRadius: BorderRadius.circular(
+                        10,
+                      ),
+                      color: isPeer
+                          ? Colors.white
+                          : myConstants.themeColor.shade400,
+                    ),
+                    child: chatModel.content != ""
+                        ? !chatModel.content.trim().endsWith(".gif")
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 3.0,
+                                  horizontal: 6.0,
+                                ),
+                                child: richText(
+                                  chatModel.content,
+                                  isPeer,
+                                  TextStyle(
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                width: 150,
+                                child: showImageRectangle(
+                                  chatModel.content,
+                                  50,
+                                ),
+                              )
+                        : Container(),
                   ),
-                  child: chatModel.content != ""
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 3.0,
-                            horizontal: 6.0,
-                          ),
-                          child: Text(
-                            chatModel.content,
-                            maxLines: null,
-                            softWrap: true,
-                            style: TextStyle(
-                              fontSize: 15,
-                            ),
-                          ),
-                        )
-                      : Container(),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 3),
-                child: Text(
-                  DateFormat.Hm().format(tsdate),
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 10,
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 4, horizontal: 3),
+                  child: Text(
+                    DateFormat.Hm().format(tsdate),
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 10,
+                    ),
                   ),
-                ),
-              )
-            ],
+                )
+              ],
+            ),
           ),
         ),
       ],

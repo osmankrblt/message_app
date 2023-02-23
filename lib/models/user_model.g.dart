@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+/* // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'user_model.dart';
 
@@ -57,3 +57,4 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+ */

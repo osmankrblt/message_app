@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+/* // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'chat_model.dart';
 
@@ -51,3 +51,6 @@ class ChatModelAdapter extends TypeAdapter<ChatModel> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+
+ */

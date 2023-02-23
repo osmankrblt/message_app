@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:grouped_list/grouped_list.dart';
 import 'package:intl/intl.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/helper/chat_provider.dart';
 import 'package:message_app/widgets/get_my_widgets.dart';
 import 'package:provider/provider.dart';
-
 import '../constants/utils.dart';
 import '../models/chat_model.dart';
 import '../models/user_model.dart';
@@ -162,7 +162,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   buildListMessage() {
     final messages = Provider.of<ChatProvider>(context, listen: true);
-    String date = "";
+
     return Flexible(
       child: widget.groupChatId.isNotEmpty
           ? StreamBuilder<QuerySnapshot>(
@@ -182,6 +182,56 @@ class _ChatScreenState extends State<ChatScreen> {
                 } else {
                   listMessage = snapshot.data!.docs;
 
+                  return GroupedListView<dynamic, String>(
+                    elements: listMessage,
+                    groupBy: (element) => DateFormat("dd/MM/yyyy")
+                        .format(DateTime.fromMillisecondsSinceEpoch(
+                      int.parse(ChatModel.fromDoc(
+                        element,
+                      ).timestamp),
+                    )),
+
+                    groupSeparatorBuilder: (String value) => Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: myConstants.themeColor.shade100,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(3.0),
+                          child: Text(
+                            getDateToString(value),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                    itemBuilder: (context, dynamic element) {
+                      ChatModel message = ChatModel.fromDoc(
+                        element,
+                      );
+
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: 10,
+                        ),
+                        child: buildItem(
+                          message,
+                        ),
+                      );
+                    },
+                    itemComparator: (item1, item2) => item1['timestamp']
+                        .compareTo(item2['timestamp']), // optional
+                    useStickyGroupSeparators: true, // optional
+                    floatingHeader: true, // optional,
+                    controller: listScrollController,
+
+                    reverse: true,
+                    order: GroupedListOrder.DESC,
+                  );
+
+/*
                   return ListView.separated(
                     padding: EdgeInsets.all(10.0),
                     separatorBuilder: (context, index) {
@@ -190,12 +240,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           listMessage[index],
                         ).timestamp),
                       );
-
-                      print(date);
-                      print(DateFormat("d/MM/y").format(tsdate));
-
-                      print(date != DateFormat("d/MM/y").format(tsdate));
-                      return date != DateFormat("d/MM/y").format(tsdate)
+                      String messageDate = DateFormat("d/MM/y").format(tsdate);
+                      return date != ""
                           ? Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Center(
@@ -223,14 +269,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       DateTime tsdate = DateTime.fromMillisecondsSinceEpoch(
                         int.parse(message.timestamp),
                       );
-                      date = DateFormat("d/MM/y").format(tsdate);
+                      date = getDateToString(tsdate);
 
                       return Padding(
                         padding: EdgeInsets.only(
                           bottom: 10,
                         ),
                         child: buildItem(
-                          index,
+                        
                           message,
                         ),
                       );
@@ -238,7 +284,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemCount: listMessage.length,
                     reverse: true,
                     controller: listScrollController,
-                  );
+                  ); */
                 }
               },
             )
@@ -250,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  buildItem(int index, ChatModel chatModel) {
+  buildItem(ChatModel chatModel) {
     return message(
       chatModel: chatModel,
       isPeer: chatModel.idFrom == widget.currentUserId ? false : true,
@@ -269,6 +315,10 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Stack(
           alignment: Alignment.center,
           children: [
+            Image.file(
+              imageFile!,
+              fit: BoxFit.cover,
+            ),
             Align(
               alignment: Alignment.topRight,
               child: IconButton(
@@ -281,10 +331,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.red,
                 ),
               ),
-            ),
-            Image.file(
-              imageFile!,
-              fit: BoxFit.cover,
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:message_app/helper/chat_provider.dart';
 import 'package:message_app/widgets/get_my_widgets.dart';
 import 'package:message_app/constants/my_constants.dart';
 import 'package:message_app/helper/contacts_provider.dart';
@@ -122,19 +123,16 @@ class _HomePageState extends State<HomePage> {
                               ? ListView.builder(
                                   padding: EdgeInsets.all(10.0),
                                   itemBuilder: (context, index) {
-                                    //   UserModel? user =
-                                    //     cp.getUserInfo(listMessageContacts[index]);
-                                    return userListTile(
-                                      UserModel(
-                                        name: "test",
-                                        profilePic: "",
-                                        bio: "test",
-                                        phoneNumber: "test",
-                                        uid: "test",
-                                        createdAt: "test",
-                                        feel: "test",
-                                      ),
+                                    List result = cp.getContactsWithUid(
+                                      listMessageContacts[index],
                                     );
+
+                                    if (result.isNotEmpty) {
+                                      UserModel? user = result[0];
+
+                                      return chatListTile(
+                                          user!, "Last message");
+                                    }
                                   },
                                   itemCount: listMessageContacts.length,
                                   reverse: false,
@@ -248,17 +246,111 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget chatListTile(UserModel user, String lastMessage) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Card(
+        elevation: 5,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 80,
+              width: 80,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      isScrollControlled: true,
+                      isDismissible: false,
+                      enableDrag: true,
+                      context: context,
+                      builder: (context) => QuickInfo(user: user),
+                      backgroundColor: Colors.transparent,
+                    );
+                  },
+                  child: showImageCircle(
+                    user.profilePic,
+                    140,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            InkWell(
+              onTap: () {
+                final String myUid =
+                    Provider.of<DatabaseProvider>(context, listen: false).uid;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      currentUserId: myUid,
+                      peerUser: user,
+                    ),
+                  ),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.name,
+                    style: TextStyle(
+                      fontSize: 20,
+                    ),
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.55,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            lastMessage,
+                            maxLines: 2,
+                            // softWrap: false,
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Container(),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(6.0),
+              child: Text(
+                "19:20",
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   getPermissions() async {
     if (await Permission.contacts.request().isDenied) {
       // Either the permission was already granted before or the user just granted it.
       Map<Permission, PermissionStatus> statuses = await [
         Permission.contacts,
+        Permission.storage,
       ].request();
     }
     if (await Permission.contacts.request().isGranted) {
       // Either the permission was already granted before or the user just granted it.
       Map<Permission, PermissionStatus> statuses = await [
         Permission.contacts,
+        Permission.storage,
       ].request();
     }
   }

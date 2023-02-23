@@ -1,19 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hive/hive.dart';
+// import 'package:hive/hive.dart';
 
-part 'chat_model.g.dart';
+// part 'chat_model.g.dart';
 
-@HiveType(typeId: 0)
+// @HiveType(typeId: 0)
 class ChatModel {
-  @HiveField(0)
+  // @HiveField(0)
   late String content;
-  @HiveField(1)
+  // @HiveField(1)
   late String image;
-  @HiveField(2)
+  // @HiveField(2)
   late String timestamp;
-  @HiveField(3)
+  // @HiveField(3)
   late String idFrom;
-  @HiveField(4)
+  // @HiveField(4)
   late String idTo;
 
   ChatModel({

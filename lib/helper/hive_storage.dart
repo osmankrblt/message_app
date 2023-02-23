@@ -1,4 +1,4 @@
-import 'package:hive_flutter/hive_flutter.dart';
+/* import 'package:hive_flutter/hive_flutter.dart';
 import 'package:message_app/helper/local_storage.dart';
 import '../models/chat_model.dart';
 import '../models/user_model.dart';
@@ -70,3 +70,4 @@ class HiveStorage extends LocalStorage {
     throw UnimplementedError();
   }
 }
+ */

@@ -72,6 +72,14 @@ class ContactsProvider extends ChangeNotifier {
     print("Arkadaşlar okundu sayı ${_myFriends.length.toString()}");
   }
 
+  getContactsWithUid(String uid) {
+    //  getAllContactsFromLocal();
+    print("Arkadaş listesi +${_myFriends.length.toString()}");
+    var myListFiltered = _myFriends.where((e) => e.uid == uid).toList();
+    print(myListFiltered.toString());
+    return myListFiltered;
+  }
+
   syncAllContacts() async {
     List<String> _numberList = await _contactsTakeAllNumbers();
     List<UserModel> _temp = [];

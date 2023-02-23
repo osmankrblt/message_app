@@ -111,12 +111,15 @@ class ChatProvider extends ChangeNotifier {
         .snapshots();
   }
 
-  dynamic getLastMessage(String groupChatId, int limit) {
-    return _firebaseFirestore
+  syncMessages() {}
+
+  Future<String> getLastMessages(String groupChatId, int limit) async {
+    QuerySnapshot snapshot = await _firebaseFirestore
         .collection("messages")
         .doc(groupChatId)
         .collection(groupChatId)
         .orderBy("timestamp", descending: true)
         .get();
+    return ChatModel.fromDoc(snapshot.docs.first).content.toString();
   }
 }

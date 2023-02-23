@@ -11,6 +11,8 @@ class ImageScreen extends StatelessWidget {
     required this.userName,
   }) : super(key: key);
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,6 +34,15 @@ class ImageScreen extends StatelessWidget {
             Navigator.pop(context);
           },
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.download,
+              color: Colors.white,
+            ),
+            onPressed: () {},
+          )
+        ],
         backgroundColor: Colors.black,
       ),
       body: Material(
